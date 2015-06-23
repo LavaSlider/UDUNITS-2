@@ -211,7 +211,8 @@ duplower(
     else {
         char*   cp = copy;
 
-        while (*cp++ = tolower(*string++))
+	/* suppress '=' instead of '==' compiler warning with extra parentheses */
+        while ((*cp++ = tolower(*string++)))
             ; /* empty */
     }
 
