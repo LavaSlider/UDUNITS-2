@@ -24,6 +24,12 @@
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
+// Add a declaration to suppress a compiler warning when
+// compiling on Mountain Lion because the declaration is
+// ifdef'd out in stdio.h
+#if __DARWIN_C_LEVEL < 200112L && !defined(_C99_SOURCE) && !defined(__cplusplus)
+int snprintf(char * __restrict, size_t, const char * __restrict, ...) __printflike(3, 4);
+#endif /* __DARWIN_C_LEVEL < 200112L && !defined(_C99_SOURCE) && !defined(__cplusplus) */
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
