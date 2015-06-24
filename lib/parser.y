@@ -35,6 +35,7 @@ char *strdup(const char *);
 #include <strings.h>
 #endif
 #include "udunits2.h"
+#include "prefix.h" /* For 'utGetPrefixByName' and 'utGetPrefixBySymbol' declarations */
 
 static ut_unit*		_finalUnit;	/* fully-parsed specification */
 static ut_system*	_unitSystem;	/* The unit-system to use */
