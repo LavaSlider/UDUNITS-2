@@ -26,6 +26,12 @@
 #include <stdio.h>
 #ifndef _MSC_VER
 #include <string.h>
+// Add a declaration to suppress a compiler warning when
+// compiling on Mountain Lion because the declaration is
+// ifdef'd out in string.h
+#if __DARWIN_C_LEVEL < 200112L
+char *strdup(const char *);
+#endif /* __DARWIN_C_LEVEL < 200112L */
 #include <strings.h>
 #endif
 #include "udunits2.h"
