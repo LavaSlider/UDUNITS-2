@@ -573,7 +573,7 @@ which is automatically included by the UDUNITS-2 header-file
 (@code{<udunits2.h>}) so you don't need to explicitly include it.
 
 @anchor{ut_are_convertible()}
-@deftypefun @code{int} ut_are_convertible @code{(const ut_unit* @var{unit1}, uconst t_unit* @var{unit2})}
+@deftypefun @code{int} ut_are_convertible @code{(const ut_unit* @var{unit1}, const ut_unit* @var{unit2})}
 Indicates if numeric values in unit @var{unit1} are convertible to numeric
 values in unit @var{unit2} via @ref{ut_get_converter()}.
 In making this determination, dimensionless units are ignored.
