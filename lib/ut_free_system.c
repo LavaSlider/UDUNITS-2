@@ -15,6 +15,7 @@
 #include "udunits2.h"
 #include "idToUnitMap.h"
 #include "unitToIdMap.h"
+#include "named_system.h"
 
 extern void coreFreeSystem(ut_system* system);
 
@@ -32,6 +33,7 @@ ut_free_system(
     ut_system*	system)
 {
     if (system != NULL) {
+	namedSystemFreeSystem(system);
 	itumFreeSystem(system);
 	utimFreeSystem(system);
 	coreFreeSystem(system);

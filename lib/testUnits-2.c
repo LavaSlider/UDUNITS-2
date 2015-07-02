@@ -25,8 +25,6 @@
 
 #include "udunits2.h"
 #include "named_system.h"
-int utFindNamedSystemIndex( ut_system* const system, const char* const string );
-void namedSystemFreeSystem( ut_system*	system );
 
 static const char*  xmlPath;
 static ut_system*	unitSystem;
@@ -159,7 +157,6 @@ test_named_system(void)
     CU_ASSERT_EQUAL(utFindNamedSystemIndex(unitSystem, "limey system"), 0);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
 
-    namedSystemFreeSystem(system);	// This needs to be added to ut_free_system()
     ut_free_system(system);
 }
 

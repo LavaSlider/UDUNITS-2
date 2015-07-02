@@ -400,13 +400,12 @@ addNamedSystem(
  *	system	Pointer to the unit-system.
  *	string	Pointer to the string to be search for.
  * Returns:
- *	-1		String not found or error
- *	index		The index value (zero to max) assigned to the named system
- *
- *	ut_get_status() will return:
- *		UT_BAD_ARG	"string" or system is NULL.
- *		UT_UNKNOWN	A name-prefix was not discovered.
- *		UT_SUCCESS	Success.  "*value" and "*len" will be set if non-NULL.
+ *	index	Success. The index value (zero to max) assigned to the named system
+ *	-1	Failure. String not found or error
+ *		    ut_get_status() will return:
+ *		    - UT_BAD_ARG	"string" or system was NULL.
+ *		    - UT_UNKNOWN	A named units system was not discovered.
+ *		    - UT_SUCCESS	Success.
  */
 int
 utFindNamedSystemIndex(
@@ -438,7 +437,6 @@ namedSystemFreeSystem(
 	    nstimFree( *namedSystemToIndex );
 
 	smRemove( systemToNameToIndex, system );
-	systemToNameToIndex = 0;
     }	/* valid arguments and existing map */
 }
 

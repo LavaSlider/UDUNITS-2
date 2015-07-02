@@ -13,6 +13,7 @@ libudunits2_la_SOURCES = unitcore.c converter.c formatter.c \
     unitToIdMap.c unitToIdMap.h \
     unitAndId.c unitAndId.h \
     systemMap.c systemMap.h \
+    named_system.c named_system.h \
     prefix.c prefix.h \
     parser.y \
     status.c \
@@ -61,9 +62,9 @@ LDADD			= \
     @LD_CUNIT@ \
     @LIBS_COVERAGE@ \
     @LIBS@
-check_PROGRAMS		= testUnits
+check_PROGRAMS		= testUnits testUnits-2
 TESTS_ENVIRONMENT	= UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml'
-TESTS = testUnits
+TESTS = testUnits testUnits-2
 else
 LDADD			= @LIBS@
 endif
@@ -105,13 +106,20 @@ SUFFIXES = .c .l
 	gcov -o .libs/libudunits2_la-$<.o $<.c
 
 if HAVE_CUNIT
+check-3:	testUnits-2
+	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' ./testUnits-2
+
 check-2:	testUnits
 	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' ./testUnits
 
 check-1:	testUnits-1
 	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' ./testUnits-1
 
-debug:		debug-2
+debug:		debug-2 debug-3
+
+debug-3:	testUnits-2
+	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' \
+	    $(LIBTOOL) --mode=execute gdb testUnits-2
 
 debug-2:	testUnits
 	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' \
@@ -125,6 +133,10 @@ debug-decode-time:	test_decode_time
 	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' \
 	    $(LIBTOOL) --mode=execute gdb test_decode_time
 
+valgrind-3:	testUnits-2
+	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' \
+	    $(LIBTOOL) --mode=execute valgrind --leak-check=yes testUnits-2
+
 valgrind-2:	testUnits
 	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' \
 	    $(LIBTOOL) --mode=execute valgrind --leak-check=yes testUnits
@@ -133,7 +145,7 @@ valgrind-1:	testUnits-1
 	UDUNITS2_XML_PATH='$(srcdir)/udunits2.xml' \
 	    $(LIBTOOL) --mode=execute valgrind --leak-check=yes testUnits-1
 
-.PHONY:		check-1 check-2 debug debug-1 debug-2 valgrind-1 valgrind-2
+.PHONY:		check-1 check-2 check-3 debug debug-1 debug-2 debug-3 valgrind-1 valgrind-2 valgrind-3
 endif
 
 parser.o: scanner.c

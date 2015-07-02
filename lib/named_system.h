@@ -21,51 +21,34 @@ extern "C" {
 #endif
 
 /*
- * Adds a units system name to a unit-system.  A units system name is something
- * like "SI" or "metric".  Comparisons between units system names are
- * case-insensitive.
+ * Looks up the named system and returns its index.
  *
  * Arguments:
- *	system		Pointer to the unit-system.
- *	name		Pointer to the units system name (e.g., "SI").
- *			May be freed upon return.
- *	encoding	(Pretty much ignored at present)
+ *	system	Pointer to the unit-system.
+ *	string	Pointer to the string to be search for.
  * Returns:
- *	UT_SUCCESS	Success.
- *	UT_BAD_ARG	"system" or "name" is NULL
- *	UT_OS		Operating-system failure.  See "errno".
+ *	index	Success. The index value (zero to max) assigned to the named system
+ *	-1	Failure. String not found or error
+ *		    ut_get_status() will return:
+ *		    - UT_BAD_ARG	"string" or system was NULL.
+ *		    - UT_UNKNOWN	A named units system was not discovered.
+ *		    - UT_SUCCESS	Success.
  */
-ut_status
-ut_add_named_system(
+int
+utFindNamedSystemIndex(
     ut_system* const	system,
-    const char* const	name,
-    const ut_encoding	encoding);
+    const char* const	string);
 
 /*
- * Adds an alias or alternate units system name to a unit-system.
- * A units system name is something like "SI" and an alternate name
- * might be "International System".
+ * Frees resources associated with a unit-system.
  *
  * Arguments:
- *	system		Pointer to the unit-system.
- *	name		Pointer to the new units system name (e.g., "SI").
- *			May be freed upon return.
- *	encoding	(Pretty much ignored at present)
- *	named_system	Existing named system name
- * Returns:
- *	UT_SUCCESS	Success.
- *	UT_BAD_ARG	"system", "name" or "named_system" is NULL
- *	UT_UNKNOWN	"named_system" does not exist
- *	UT_EXISTS	If the new name already exists and is not a synonym
- *			for "named_system"
- *	UT_OS		Operating-system failure.  See "errno".
+ *	system		Pointer to the unit-system to have its associated
+ *			resources freed.
  */
-ut_status
-ut_map_name_to_named_system(
-    ut_system* const	system,
-    const char* const	name,		/* New name */
-    const ut_encoding	encoding,
-    const char* const	named_system);	/* Existing name */
+void
+namedSystemFreeSystem(
+    ut_system*	system);
 
 #ifdef __cplusplus
 }
