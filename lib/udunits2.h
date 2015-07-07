@@ -1179,8 +1179,8 @@ ut_accept_visitor(
  ******************************************************************************/
 typedef struct __ut_string_list ut_string_list;
 void ut_string_list_free( ut_string_list* list );
-int ut_string_list_length( ut_string_list* list );
-char* ut_string_list_element( ut_string_list* list, int element );
+int ut_string_list_length( const ut_string_list* const list );
+char* ut_string_list_element( const ut_string_list* const list, int element );
 
 
 /*

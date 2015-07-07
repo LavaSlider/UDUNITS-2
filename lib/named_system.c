@@ -595,11 +595,11 @@ ut_string_list_free( ut_string_list* list ) {
     }
 }
 int
-ut_string_list_length( ut_string_list* list ) {
+ut_string_list_length( const ut_string_list* const list ) {
     return list ? list->_len : 0;
 }
 char *
-ut_string_list_element( ut_string_list* list, int element ) {
+ut_string_list_element( const ut_string_list* const list, int element ) {
     if( list && element >= 0 && element < list->_len )
         return list->_list[element];
     return NULL;
