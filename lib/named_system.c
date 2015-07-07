@@ -557,11 +557,18 @@ ut_string_list_new_with_capacity( int n ) {
     return list;
 }
 void
+ut_string_list_truncate_waste( ut_string_list* list ) {
+    if( list && list->_list && list->_listSize > list->_len ) {
+	list->_list = (char**) realloc( list->_list, list->_len * sizeof(char *) );
+	list->_listSize = list->_len;
+    }
+}
+void
 ut_string_list_add_element( ut_string_list* list, const char *string ) {
     if( list && string ) {
 	if( list->_list == NULL ) {
-	    list->_list = (char**) calloc( 2, sizeof(char *) );
-	    list->_listSize = 2;
+	    list->_list = (char**) malloc( sizeof(char *) );
+	    list->_listSize = 1;
 	    list->_len = 0;
 	}
 	if( list->_list != NULL ) {
@@ -574,8 +581,8 @@ ut_string_list_add_element( ut_string_list* list, const char *string ) {
 			(list->_len + 1) * sizeof(char *) );
 		}
 		else {
-		list->_list = newList;
-			list->_listSize = list->_len + 1;
+		    list->_list = newList;
+		    list->_listSize = list->_len + 1;
 		}
 	    }
 	    if( list->_list && list->_len < list->_listSize ) {
@@ -650,6 +657,7 @@ _ut_get_named_system_aliases( const ut_system* const  system, const char* const 
 		}
 		__name_list = ut_string_list_new_with_capacity( map->namedSystemNamesCount );
 		twalk( map->tree, twalkGetNameListAction );
+		ut_string_list_truncate_waste( __name_list );
 		list = __name_list;
 		__name_list = NULL;
 	    }
