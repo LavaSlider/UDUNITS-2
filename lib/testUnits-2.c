@@ -163,6 +163,76 @@ test_named_system(void)
     ut_free_system(system);
 }
 
+static void
+test_named_system_name_getting(void)
+{
+    ut_system*	system = ut_new_system();
+    ut_string_list* namedSystems;
+
+    CU_ASSERT_PTR_NULL(ut_get_named_systems( NULL ));
+    CU_ASSERT_PTR_NOT_NULL(system);
+    CU_ASSERT_PTR_NULL(ut_get_named_systems( system ));
+
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "SI", UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "Metric", UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "US", UT_ASCII), UT_SUCCESS);
+    namedSystems = ut_get_named_systems( system );
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),3);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "Metric");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US");
+    ut_string_list_free( namedSystems );
+
+    CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "International System", UT_ASCII, "SI"), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "US Conventional System", UT_ASCII, "US"), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "US Common", UT_ASCII, "US"), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "US Common System", UT_ASCII, "US"), UT_SUCCESS);
+    namedSystems = ut_get_named_systems( system );
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),3);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "Metric");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US");
+    ut_string_list_free( namedSystems );
+    namedSystems = ut_get_named_system_aliases( system, "US" );
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),4);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US Common");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US Common System");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US Conventional System");
+    ut_string_list_free( namedSystems );
+    namedSystems = ut_get_named_system_aliases( system, NULL );
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),7);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "International System");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "Metric");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,4), "US Common");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,5), "US Common System");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,6), "US Conventional System");
+    ut_string_list_free( namedSystems );
+
+    //printf( "Getting the list of named systems:\n" );
+    //namedSystems = ut_get_named_systems( system );
+    // Print all the names
+    //for( int i = 0; i < ut_string_list_length(namedSystems); ++i ) {
+        //printf( "%d: %s\n", i, ut_string_list_element(namedSystems,i) );
+    //}
+    //ut_string_list_free( namedSystems );
+    //printf( "Getting the list of named system aliases of \"US\":\n" );
+    //namedSystems = ut_get_named_system_aliases( system, "US" );
+    // Print all the names
+    //for( int i = 0; i < ut_string_list_length(namedSystems); ++i ) {
+        //printf( "%d: %s\n", i, ut_string_list_element(namedSystems,i) );
+    //}
+    //ut_string_list_free( namedSystems );
+
+    ut_free_system(system);
+}
+
 typedef struct Bitmap   Bitmap;
 Bitmap *bitmapNew();
 Bitmap *bitmapDup( const Bitmap* src );
@@ -458,6 +528,7 @@ main(
 
 	if (testSuite != NULL) {
 	    CU_ADD_TEST(testSuite, test_named_system);
+	    CU_ADD_TEST(testSuite, test_named_system_name_getting);
 	    CU_ADD_TEST(testSuite, test_bitmap);
 	    CU_ADD_TEST(testSuite, test_named_system_registry);
 	    CU_ADD_TEST(testSuite, test_named_system_registry_location);

@@ -28,6 +28,7 @@
 #endif
 #include <stdlib.h>
 #include <stdio.h>	/* For printf */
+#include <limits.h>	/* For INT_MAX */
 
 #include <string.h>
 // Add a declaration to suppress a compiler warning when
@@ -44,7 +45,8 @@ char *strdup(const char *);
 
 typedef struct {
     void*	tree;
-    int		namedSystemCount;
+    int		namedSystemCount;	// The number of unique units system names
+    int		namedSystemNamesCount;	// The total number of names including aliases
     int		(*compare)( const void*, const void* );
 } NamedSystemToIndexMap;
 
@@ -127,7 +129,8 @@ nstimNew(
     }
     else {
 	map->tree = NULL;
-	map->namedSystemCount = 0;
+	map->namedSystemCount = 0;	// The number of unique units system names
+	map->namedSystemNamesCount = 0;	// The total number of names including aliases
 	map->compare = compare;
     }
 
@@ -180,7 +183,7 @@ nstimSearch(
     int				index)
 {
     const NamedSystemSearchEntry*	entry = NULL;	/* failure */
-    int	maxNamedSystemCount = 32; /* This is tied to the ut_unit implementation */
+    int	maxNamedSystemCount = INT_MAX; /* I made bitmaps extensible, not fixed */
     //printf( "Entering nstimSearch( map, \"%s\" )\n", id );
 
     if( index > map->namedSystemCount ) {
@@ -191,7 +194,7 @@ nstimSearch(
 	//printf( "- Status set to US_OS for too many named systems\n" );
 	ut_set_status( UT_OS );
     }
-    else if( id == NULL || map == NULL || strlen(id) <= 0 ) {
+    else if( map == NULL || id == NULL || *id == '\0' ) {
 	//printf( "- Parameters are not good, status set to UT_BAD_ARG\n" );
 	ut_set_status( UT_BAD_ARG );
     }
@@ -232,9 +235,10 @@ nstimSearch(
 		else {
 	            //printf( "- It is a new entry\n" );
 		    if( index < 0 ) {
-			map->namedSystemCount++;
+			map->namedSystemCount++; // Bump the number of primary  names
 			newEntry->flags |= NSSEFLAG_PRIMARY_NAME;
 		    }
+		    map->namedSystemNamesCount++;  // Bump the total number of names
 		    entry = newEntry;
 		    ut_set_status( UT_SUCCESS );
 		}
@@ -267,7 +271,7 @@ nstimFind(
 {
     const NamedSystemSearchEntry*	entry = NULL;	/* failure */
 
-    if( string == NULL || map == NULL || strlen(string) <= 0 ) {
+    if( map == NULL || string == NULL || *string == '\0' ) {
 	ut_set_status( UT_BAD_ARG );
     }
     else {
@@ -302,11 +306,11 @@ nstimFind(
 
 static const NamedSystemSearchEntry*
 findOrAddNamedSystem(
-    ut_system* const	system,
-    SystemMap** const	systemMap,
-    const char* const	name,
-    int			index,
-    int			(*compare)( const void*, const void* ))
+    const ut_system* const	system,
+    SystemMap** const		systemMap,
+    const char* const		name,
+    int				index,
+    int				(*compare)( const void*, const void* ))
 {
     const NamedSystemSearchEntry* entry = NULL; /* Error, could not be added or not found */
     ut_status		status;
@@ -316,7 +320,7 @@ findOrAddNamedSystem(
     //printf( "- Can add name is %s\n", canAdd ? "TRUE" : "FALSE" );
 
     if( system == NULL || systemMap == NULL ||
-        name == NULL || strlen(name) == 0 ||
+        name == NULL || *name == '\0' ||
 	(!canAdd && *systemMap == NULL) ) {
 	//printf( "- Status being set to UT_BAD_ARG for null pointer problem\n" );
 	status = UT_BAD_ARG;
@@ -416,8 +420,8 @@ addNamedSystem(
  */
 int
 utFindNamedSystemIndex(
-    ut_system* const	system,
-    const char* const	system_name)
+    const ut_system* const	system,
+    const char* const		system_name)
 {
     const NamedSystemSearchEntry* entry =
         findOrAddNamedSystem( system, &systemToNameToIndex, system_name, -1, NULL );
@@ -498,8 +502,8 @@ ut_map_name_to_named_system(
     const char* const	system_name)
 {
     ut_status	status;
-    if( system == NULL || name == NULL || strlen(name) <= 0 ||
-        system_name == NULL || strlen(system_name) <= 0 ) {
+    if( system == NULL || name == NULL || *name == '\0' ||
+        system_name == NULL || *system_name == '\0' ) {
 	status = UT_BAD_ARG;
     }
     else {
@@ -530,6 +534,189 @@ ut_map_name_to_named_system(
         }
     }
     return status;
+}
+
+struct __ut_string_list {
+    char**	_list;
+    int		_len;
+    int		_listSize;
+};
+
+ut_string_list*
+ut_string_list_new() {
+    ut_string_list* list = (ut_string_list*) calloc( 1, sizeof(ut_string_list) );
+    return list;
+}
+ut_string_list*
+ut_string_list_new_with_capacity( int n ) {
+    ut_string_list *list = ut_string_list_new();
+    if( list ) {
+        list->_list = (char**) calloc( n + 1, sizeof(char *) );
+	list->_listSize = n + 1;
+    }
+    return list;
+}
+void
+ut_string_list_add_element( ut_string_list* list, const char *string ) {
+    if( list && string ) {
+	if( list->_list == NULL ) {
+	    list->_list = (char**) calloc( 2, sizeof(char *) );
+	    list->_listSize = 2;
+	    list->_len = 0;
+	}
+	if( list->_list != NULL ) {
+	    if( list->_len >= list->_listSize ) {
+		char **newList = (char**) realloc( list->_list, (list->_len + 1) * sizeof(char *) );
+		if( newList == NULL ) {
+		    ut_handle_error_message( strerror(errno) );
+		    ut_handle_error_message(
+			"Couldn't allocate %lu-bytes to extend ut_string_list",
+			(list->_len + 1) * sizeof(char *) );
+		}
+		else {
+		list->_list = newList;
+			list->_listSize = list->_len + 1;
+		}
+	    }
+	    if( list->_list && list->_len < list->_listSize ) {
+	        list->_list[list->_len] = strdup( string );
+		++list->_len;
+	    }
+	}
+    }
+}
+void
+ut_string_list_free( ut_string_list* list ) {
+    if( list ) {
+	for( int i = 0; i < list->_len; ++i )
+	    if( list->_list[i] ) free( list->_list[i] );
+	free( list->_list );
+	free( list );
+    }
+}
+int
+ut_string_list_length( ut_string_list* list ) {
+    return list ? list->_len : 0;
+}
+char *
+ut_string_list_element( ut_string_list* list, int element ) {
+    if( list && element >= 0 && element < list->_len )
+        return list->_list[element];
+    return NULL;
+}
+
+static ut_string_list*	__name_list =  NULL;
+static int		__doAll     =  1;	// Set true/false to save/print all names
+static int		__doUniq    =  0;	// Set true/false to save/print only primary names
+static int		__aliasesOf = -1;	// Set to index of aliases to save/print
+static void twalkGetNameListAction( const void *node, VISIT order, int level );
+
+/*
+ *  Get the list of named unit systems for the system.
+ *
+ *  If system_name is
+ *    System name	Get aliases of named units system
+ *    Empty string ("")	Get all primary unit system names
+ *    NULL		Get all the defined named unit systems
+ *
+ *  Returns
+ *    NULL		If system == NULL or has no named systems defined
+ *    ut_string_list*	Containing the list of selected units
+ *			system names per the system_name parameter.
+ */
+ut_string_list*
+_ut_get_named_system_aliases( const ut_system* const  system, const char* const system_name ) {
+    ut_string_list* list = NULL;
+    if( system != NULL && systemToNameToIndex != NULL) {
+	NamedSystemToIndexMap** const namedSystemToIndex =
+		    (NamedSystemToIndexMap**) smFind( systemToNameToIndex, system );
+	if( namedSystemToIndex && *namedSystemToIndex ) {
+	    NamedSystemToIndexMap*	map = *namedSystemToIndex;
+	    if( map && map->namedSystemNamesCount > 0 ) {
+		if( system_name != NULL && *system_name != '\0' ) {
+		    __aliasesOf = utFindNamedSystemIndex( system, system_name );
+		    __doUniq = 0;	  // Not primary
+		    __doAll = 0;	  // Not all
+		}
+		else if( system_name != NULL && *system_name == '\0' ) {
+		    __aliasesOf = -1; // Not aliases of anything
+		    __doUniq = 1;	  // Just primary
+		    __doAll = 0;	  // Not all
+		}
+		else {
+		    __aliasesOf = -1; // Not aliases of anything
+		    __doUniq = 0;	  // Not primary
+		    __doAll = 1;	  // Get them all
+		}
+		__name_list = ut_string_list_new_with_capacity( map->namedSystemNamesCount );
+		twalk( map->tree, twalkGetNameListAction );
+		list = __name_list;
+		__name_list = NULL;
+	    }
+	}
+    }
+    return list;
+}
+
+/*
+ *  Get the list of named unit systems for the system.
+ *
+ *  If system_name is
+ *    System name	Get aliases of named units system
+ *    Empty string ("")	Get all primary unit system names
+ *    NULL		Get all the defined named unit systems
+ *
+ *  Returns
+ *    NULL		If system == NULL or has no named systems defined
+ *    ut_string_list*	Containing the list of selected units
+ *			system names per the system_name parameter.
+ */
+ut_string_list*
+ut_get_named_system_aliases( const ut_system* const system, const char* const system_name ) {
+    return _ut_get_named_system_aliases( system, system_name );
+}
+/*
+ *  Get the list of the primary named unit systems for the system.
+ *  That is, only unique named units systems will be returned.
+ *
+ *  Returns
+ *    NULL		If system == NULL or has no named systems defined
+ *    ut_string_list*	Containing the list of unique selected units
+ *			system names.
+ */
+ut_string_list*
+ut_get_named_systems( const ut_system* const system ) {
+    return _ut_get_named_system_aliases( system, "" );
+}
+
+static void twalkGetNameListAction( const void *node, VISIT order, int level ) {
+    NamedSystemSearchEntry**	nssep = (NamedSystemSearchEntry**) node;
+    NamedSystemSearchEntry*	nsse = *nssep;
+
+    switch( order ) {
+    case preorder:
+    case endorder:
+	break;
+    case postorder:
+    case leaf:
+	if( __doAll || (__doUniq && (nsse->flags & NSSEFLAG_PRIMARY_NAME)) ||
+	    (__aliasesOf >= 0 && nsse->index == __aliasesOf) ) {
+	    if( __name_list ) {
+		ut_string_list_add_element( __name_list, nsse->name );
+	    }
+	    else {
+		//printf( "-- level %2d: ", level );
+		printf( "%2d %#04x \"%s\"", nsse->index, nsse->flags, nsse->name );
+		printf( "\n" );
+	    }
+	}
+	break;
+    default:
+	ut_handle_error_message(
+	    "twalk unknown VISIT order: %d: named units system \"%s\" entry",
+	    order, nsse->name );
+	break;
+    }
 }
 
 /******************************************************************************
@@ -869,7 +1056,7 @@ utAddNamedSystemToRegistry(
 {
     ut_status	status;
     if( system == NULL ||
-        system_name == NULL || strlen(system_name) <= 0 ) {
+        system_name == NULL || *system_name == '\0' ) {
 	status = UT_BAD_ARG;
     } else {
 	if( bitmap == NULL ) {

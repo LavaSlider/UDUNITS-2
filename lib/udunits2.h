@@ -1177,6 +1177,10 @@ ut_accept_visitor(
 /******************************************************************************
  * Named System Handling:
  ******************************************************************************/
+typedef struct __ut_string_list ut_string_list;
+void ut_string_list_free( ut_string_list* list );
+int ut_string_list_length( ut_string_list* list );
+char* ut_string_list_element( ut_string_list* list, int element );
 
 
 /*
@@ -1225,6 +1229,37 @@ ut_map_name_to_named_system(
     const char* const	name,		/* New name */
     const ut_encoding	encoding,
     const char* const	named_system);	/* Existing name */
+
+/*
+ *  Get the list of the primary named unit systems for the system.
+ *  That is, only unique named units systems will be returned.
+ *
+ *  Returns
+ *    NULL		If system == NULL or has no named systems defined
+ *    ut_string_list*	Containing the list of unique selected units
+ *			system names.
+ */
+EXTERNL ut_string_list*
+ut_get_named_systems(
+    const ut_system* const system);
+
+/*
+ *  Get the list of named unit systems for the system.
+ *
+ *  If system_name is
+ *    "System name"	Get aliases of named units system
+ *    Empty string ("")	Get all primary unit system names
+ *    NULL		Get all the defined named unit systems
+ *
+ *  Returns
+ *    NULL		If system == NULL or has no named systems defined
+ *    ut_string_list*	Containing the list of selected units
+ *			system names per the system_name parameter.
+ */
+EXTERNL ut_string_list*
+ut_get_named_system_aliases(
+    const ut_system* const	system,
+    const char* const		system_name);
 
 
 /******************************************************************************
