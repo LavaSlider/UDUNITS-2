@@ -27,7 +27,7 @@
 #include <search.h>
 #endif
 #include <stdlib.h>
-//#include <stdio.h>	/* For printf */
+#include <stdio.h>	/* For printf */
 
 #include <string.h>
 // Add a declaration to suppress a compiler warning when
@@ -50,9 +50,12 @@ typedef struct {
 
 typedef struct {
     void*		nextTree;
-    int			index;
     const char*		name;
+    int			index;
+    unsigned short	flags;
 } NamedSystemSearchEntry;
+
+#define	NSSEFLAG_PRIMARY_NAME	0x01
 
 static SystemMap*	systemToNameToIndex = NULL;
 
@@ -76,8 +79,9 @@ nsseNew(
     }
     else {
 	entry->name = strdup( name );
-	entry->index = index;
 	entry->nextTree = NULL;
+	entry->index = index;
+	entry->flags = 0x00;
     }
 
     return entry;
@@ -220,14 +224,17 @@ nstimSearch(
 		    nsseFree( newEntry );
 		    entry = *treeEntry;
 		    ut_set_status( (index >= 0 && entry->index != index) ?
-		    			UT_EXISTS : UT_SUCCESS );
+					UT_EXISTS : UT_SUCCESS );
 		}
 		// If the tree entry returned is the new one then we just
 		// added a new named system and we need to bump the count
 		// unless we have forced an index.
 		else {
 	            //printf( "- It is a new entry\n" );
-		    if( index < 0 ) map->namedSystemCount++;
+		    if( index < 0 ) {
+			map->namedSystemCount++;
+			newEntry->flags |= NSSEFLAG_PRIMARY_NAME;
+		    }
 		    entry = newEntry;
 		    ut_set_status( UT_SUCCESS );
 		}
@@ -269,7 +276,7 @@ nstimFind(
 
 	NamedSystemSearchEntry		targetEntry;
 	NamedSystemSearchEntry* const*	treeEntry;
-		
+
 	targetEntry.name = string;
 	treeEntry = tfind( &targetEntry, tree, map->compare );
 
@@ -283,7 +290,7 @@ nstimFind(
 	if( lastEntry != NULL && lastEntry->index >= 0 ) {
 	    ut_set_status( UT_SUCCESS );
 	    entry = lastEntry;
-    	}
+	}
     }
     return entry;
 }
@@ -293,7 +300,7 @@ nstimFind(
  * Public API:
  ******************************************************************************/
 
-const NamedSystemSearchEntry*
+static const NamedSystemSearchEntry*
 findOrAddNamedSystem(
     ut_system* const	system,
     SystemMap** const	systemMap,
@@ -397,8 +404,8 @@ addNamedSystem(
  * Looks up the named system and returns its index.
  *
  * Arguments:
- *	system	Pointer to the unit-system.
- *	string	Pointer to the string to be search for.
+ *	system		Pointer to the unit-system.
+ *	system_name	Pointer to the system_name to search for. Case insensitive.
  * Returns:
  *	index	Success. The index value (zero to max) assigned to the named system
  *	-1	Failure. String not found or error
@@ -410,9 +417,10 @@ addNamedSystem(
 int
 utFindNamedSystemIndex(
     ut_system* const	system,
-    const char* const	string)
+    const char* const	system_name)
 {
-    const NamedSystemSearchEntry* entry = findOrAddNamedSystem( system, &systemToNameToIndex, string, -1, NULL );
+    const NamedSystemSearchEntry* entry =
+        findOrAddNamedSystem( system, &systemToNameToIndex, system_name, -1, NULL );
     return entry != NULL ? entry->index : -1;
 }
 
@@ -476,10 +484,10 @@ ut_add_named_system(
  *	name		Pointer to the new units system name (e.g., "SI").
  *			May be freed upon return.
  *	encoding
- *	named_system	Existing named system name
+ *	system_name	Existing named system name
  * Returns:
  *	UT_SUCCESS	Success.
- *	UT_BAD_ARG	"system", "name" or "named_system" is NULL
+ *	UT_BAD_ARG	"system", "name" or "system_name" is NULL
  *	UT_OS		Operating-system failure.  See "errno".
  */
 ut_status
@@ -487,15 +495,15 @@ ut_map_name_to_named_system(
     ut_system* const	system,
     const char* const	name,	/* New name */
     const ut_encoding	encoding,
-    const char* const	named_system)
+    const char* const	system_name)
 {
     ut_status	status;
     if( system == NULL || name == NULL || strlen(name) <= 0 ||
-        named_system == NULL || strlen(named_system) <= 0 ) {
+        system_name == NULL || strlen(system_name) <= 0 ) {
 	status = UT_BAD_ARG;
     }
     else {
-        int existingIndex = utFindNamedSystemIndex( system, named_system );
+        int existingIndex = utFindNamedSystemIndex( system, system_name );
         if( existingIndex < 0 ) {
 	    // Should I just create it or return an error here???
 	    status = UT_UNKNOWN;
@@ -522,4 +530,524 @@ ut_map_name_to_named_system(
         }
     }
     return status;
+}
+
+/******************************************************************************
+ * Generic Bitmap Functions:
+ ******************************************************************************/
+/* Could this have been done with bit_strings (see man bit_test) */
+typedef unsigned int chunkType;
+typedef struct Bitmap {
+    int		chunkCount;
+    chunkType	*chunks;
+} Bitmap;
+
+/*
+ *
+ */
+void
+fprintfBitmap( FILE *fp, const char *fmt, Bitmap *bitmap ) {
+    if( bitmap && bitmap->chunks ) {
+	int	skip = 1;
+	int	altForm = 0;
+	int	leftAlign = 0;
+	int	fieldWidth = 0;
+	int	precision = 0;
+	int	format = 'x';
+	// Figure out the format options
+	if( fmt ) {
+	    if( *fmt == '%' ) {			++fmt; }
+	    if( *fmt == '#' ) { altForm = 1;	++fmt; }
+	    if( *fmt == '-' ) { leftAlign = 1;	++fmt; }
+	    if( *fmt == '+' ) {			++fmt; }
+	    if( *fmt == '0' ) { skip = 0;	++fmt; }
+	    while( isdigit( *fmt ) ) {
+		fieldWidth = 10 * fieldWidth + (*fmt - '0');
+		++fmt;
+	    }
+	    if( *fmt == '.' ) {
+		++fmt;
+		while( isdigit( *fmt ) ) {
+		    precision = 10 * precision + (*fmt - '0');
+		    ++fmt;
+		}
+	    }
+	    if( isalpha( *fmt ) ) { format = *fmt; ++fmt; }
+	}
+	if( altForm ) {
+		if( format == 'X' )
+			fprintf( fp, "0X" );
+		else	fprintf( fp, "0x" );
+	}
+	for( int i = bitmap->chunkCount - 1; i >= 0; --i ) {
+	    if( skip && bitmap->chunks[i] == 0 ) {
+	    } else {
+		if( skip ) {
+	            fprintf( fp, "%x", bitmap->chunks[i] );
+		    skip = 0;
+		} else {
+	            fprintf( fp, "%0*x", (int) (2 * sizeof(*bitmap->chunks)), bitmap->chunks[i] );
+	        }
+	    }
+	}
+    }
+}
+void
+printfBitmap( const char *fmt, Bitmap *bitmap ) {
+    fprintfBitmap( stdout, fmt, bitmap );
+}
+
+void
+bitmapInit(
+    Bitmap*	entry)
+{
+    if( entry != NULL ) {
+	entry->chunkCount = -1;
+	entry->chunks = NULL;
+    }
+}
+
+void
+bitmapReset(
+    Bitmap*	entry)
+{
+    if( entry != NULL ) {
+        if( entry->chunks ) free( (void *) entry->chunks );
+	entry->chunks = NULL;
+	entry->chunkCount = -1;
+    }
+}
+
+Bitmap *
+bitmapNew() {
+    Bitmap*	entry = malloc( sizeof(Bitmap) );
+
+    if( entry == NULL ) {
+	ut_handle_error_message( strerror(errno) );
+	ut_handle_error_message(
+            "Couldn't allocate %lu-byte bitmap",
+	    sizeof(Bitmap) );
+    }
+    else {
+	bitmapInit( entry );
+    }
+
+    return entry;
+}
+
+int
+bitmapCmp(
+    const Bitmap*	b1,
+    const Bitmap*	b2)
+{
+    int i, j;
+    // Both NULL or point to the same place
+    if( b1 == b2 )
+	return 0;
+    // Both empty
+    if( b1 == NULL && b2 != NULL && b2->chunkCount <= 0 )
+	return 0;
+    if( b1 != NULL && b1->chunkCount <= 0 && b2 == NULL )
+        return 0;
+    if( b1 != NULL && b2 != NULL && b1->chunkCount <= 0 && b2->chunkCount <= 0 )
+	return 0;
+    // b1 NULL and b2 not (or they would be equal)
+    if( b1 == NULL /*|| (b1 != NULL && b1->chunkCount <= 0)*/ ) {
+	if( b2->chunkCount > 0 && b2->chunks != NULL ) {
+	    for( i = 0; i < b2->chunkCount; ++i ) {
+		if( b2->chunks[i] != 0 )
+		    return -1;	// b1 empty, b2 not so b1 < b2
+	    }
+	}
+	return 0;
+    }
+    // b1 not NULL and b2 NULL (or they would be equal)
+    if( b2 == NULL /*|| b2->chunkCount <= 0*/ ) {
+	if( b1->chunkCount > 0 && b1->chunks != NULL ) {
+	    for( i = 0; i < b1->chunkCount; ++i ) {
+		if( b1->chunks[i] != 0 )
+		    return 1;	// b2 empty, b1 not so b1 > b2
+	    }
+	}
+	return 0;
+    }
+    // Neither b1 nor b2 NULL
+    if( b1->chunkCount > b2->chunkCount ) {
+	i = b1->chunkCount - 1;
+	while( i >= b2->chunkCount ) {
+	    if( b1->chunks[i] != 0 )
+		return 1;
+	    --i;
+	}
+    }
+    else if( b1->chunkCount < b2->chunkCount ) {
+	i = b2->chunkCount - 1;
+	while( i >= b1->chunkCount ) {
+	    if( b2->chunks[i--] != 0 )
+		return -1;
+	}
+    }
+    else {
+	i = b1->chunkCount - 1;
+    }
+    while( i >= 0 ) {
+	if( b1->chunks[i] > b2->chunks[i] ) {
+	    return 1;
+	}
+	else if( b1->chunks[i] < b2->chunks[i] ) {
+	    return -1;
+	}
+	--i;
+    }
+    return 0;
+}
+
+Bitmap *
+bitmapCopy(
+    Bitmap*		dest,
+    const Bitmap*	src)
+{
+    if( dest ) {
+        bitmapReset( dest );
+	if( src && src->chunkCount > 0 && src->chunks ) {
+	    int n = src->chunkCount - 1;
+	    while( n >= 0 ) {
+		if( src->chunks[n] )
+		    break;
+		--n;
+	    }
+	    dest->chunkCount = n + 1;
+	    dest->chunks = malloc( (n+1) * sizeof(*(dest->chunks)) );
+	    for( int i = 0; i <= n; ++i )
+		dest->chunks[i] = src->chunks[i];
+	}
+    }
+    return dest;
+}
+
+Bitmap *
+bitmapDup(
+    const Bitmap*	src)
+{
+    Bitmap*		newBitmap = NULL;
+    if( src ) {
+	newBitmap = bitmapNew();
+	bitmapCopy( newBitmap, src );
+    }
+    return newBitmap;
+}
+
+void
+bitmapFree(
+    Bitmap*	entry)
+{
+    bitmapReset( entry );
+    free( entry );
+}
+
+int
+bitIsSet(
+    Bitmap*	bitmap,
+    int		i)
+{
+    int	isSet = 0;
+    if( i >= 0 && bitmap && bitmap->chunks ) {
+	int chunkSize = sizeof(*(bitmap->chunks)) << 3;
+	int chunk = i / chunkSize;
+	if( chunk < bitmap->chunkCount ) {
+	    int bit = i % chunkSize;
+	    if( (bitmap->chunks[chunk] & (0x01 << bit)) != 0 )
+		isSet = 1;
+	}
+    }
+    return isSet;
+}
+
+int
+setBit(
+    Bitmap*	bitmap,
+    int		n)
+{
+    int	wasSet = 0;
+    if( n >= 0 && bitmap ) {
+	size_t chunkSize = sizeof(*(bitmap->chunks)) << 3;
+	int chunk = n / chunkSize;
+	// Allocate space if needed
+	if( chunk >= bitmap->chunkCount || bitmap->chunks == NULL ) {
+	    bitmap->chunks = realloc( bitmap->chunks, (chunk+1) * sizeof(*(bitmap->chunks)) );
+	    if( bitmap->chunks ) {
+		int i = bitmap->chunkCount > 0 ? bitmap->chunkCount : 0;
+		while( i <= chunk )
+		    bitmap->chunks[i++] = 0;
+	    }
+	    bitmap->chunkCount = chunk + 1;
+	}
+	if( chunk < bitmap->chunkCount ) {
+	    int bit = n % chunkSize;
+	    if( (bitmap->chunks[chunk] & ((chunkType) (0x01 << bit))) != 0 )
+		wasSet = 1;
+	    //printf( "Before setting bit %d: ", n );
+	    //printfBitmap( "%#x", bitmap );
+	    //printf( "\n" );
+	    bitmap->chunks[chunk] |= (chunkType) (0x01 << bit);
+	    //printf( "After setting bit %d: ", n );
+	    //printfBitmap( "%x", bitmap );
+	    //printf( "\n" );
+	}
+    }
+    else {
+        // Error reporting?
+    }
+    return wasSet;
+}
+
+int
+clearBit(
+    Bitmap *bitmap,
+    int			  i)
+{
+    int	wasSet = 0;
+    if( i >= 0 && bitmap && bitmap->chunks ) {
+	size_t chunkSize = sizeof(*(bitmap->chunks)) << 3;
+	int chunk = i / chunkSize;
+	if( chunk < bitmap->chunkCount ) {
+	    int bit = i % chunkSize;
+	    if( (bitmap->chunks[chunk] & ((chunkType) (0x01 << bit))) != 0 )
+		wasSet = 1;
+	    bitmap->chunks[chunk] &= ~((chunkType) (0x01 << bit));
+	    /* Should we do any cleanup... if all the chunks are empty
+	       we could free them. */
+	}
+    }
+    return wasSet;
+}
+
+/******************************************************************************
+ * Unit Membership To Named System:
+ ******************************************************************************/
+
+/*
+ * Connecting to the ut_unit:
+ *   This can be done completely blindly by sticking a pointer
+ *   to an opaque structure into the ut_unit structure. This
+ *   provides more separation of function but requires more
+ *   fidling with the ut_unit structure.
+ *
+ *   Alternatively, instead of sticking a pointer into the
+ *   ut_unit I could put the actual structure. This would now
+ *   require that the ut_unit knew about the internals of
+ *   the structure (because the compiler cannot instantiate
+ *   it without know what it is) but then all the allocate
+ *   and freeing, etc., could be automatic!
+ */
+/*
+ * Adds the "system_name" from the system to the bitmap.
+ *
+ * Returns:
+ *    bitmap	The bitmap passed, or a newly allocated one if NULL
+ *		was passed, updated to reference the "system_name".
+ *		The "system_name" is automatically added to the
+ *		system if needed.
+ *    ut_get_status() will return:
+ *	UT_BAD_ARG	If system or system_name is NULL or system_name
+ *			is empty.
+ *	UT_OS		If unable to allocate needed space.
+ *	UT_SUCCESS	The registry was properly updated.
+ *
+ * usage:
+ *     NamedSystemRegistry*	registry = NULL;
+ *     registry = utAddNamedSystemToRegistry( system, registry, system_name );
+ *     if( ut_get_status() != UT_SUCCESS ) {
+ *	   fprintf( stderr, "Problem\n" );
+ *     }
+ */
+NamedSystemRegistry*
+utAddNamedSystemToRegistry(
+    ut_system* const		system,
+    NamedSystemRegistry*	bitmap,
+    const char* const		system_name)
+{
+    ut_status	status;
+    if( system == NULL ||
+        system_name == NULL || strlen(system_name) <= 0 ) {
+	status = UT_BAD_ARG;
+    } else {
+	if( bitmap == NULL ) {
+	    bitmap = bitmapNew();
+	    if( bitmap == NULL ) {
+		status = UT_OS;
+	    }
+	}
+	if( bitmap != NULL ) {
+	    int	idx = utFindNamedSystemIndex( system, system_name );
+	    if( idx < 0 ) {
+		status = ut_add_named_system( system, system_name, UT_ASCII );
+	    }
+	    idx = utFindNamedSystemIndex( system, system_name );
+	    if( idx < 0 ) {
+		status = ut_get_status();
+	    }
+	    else {
+		status = UT_SUCCESS;
+		setBit( bitmap, idx );
+	    }
+	}
+    }
+    ut_set_status( status );
+    return bitmap;
+}
+/*
+ * Adds the "system_name" to the registry, potentially creating
+ * the registry and the "system_name"
+ *
+ * UT_BAD_ARG	parameter null
+ * UT_OS	failure to allocate
+ *
+ * usage:
+ *     status = utAddNamedSystemToRegistry( system, &registry, system_name );
+ *     if( status != UT_SUCCESS ) {
+ *	   fprintf( stderr, "Problem\n" );
+ */
+ut_status
+utAddNamedSystemToRegistryLocation(
+    ut_system* const		system,
+    NamedSystemRegistry**	bitmapPointer,
+    const char* const		system_name)
+{
+
+    ut_status status;
+    if( bitmapPointer ) {
+	*bitmapPointer = utAddNamedSystemToRegistry( system, *bitmapPointer, system_name );
+	status = ut_get_status();
+    }
+    else {
+	status = UT_BAD_ARG;
+    }
+    return status;
+}
+/*
+ * Clears the reference to the system_name in the system from the
+ * bitmap passed.
+ *
+ * Returns:
+ *    UT_SUCCESS	If successfully cleared. This includes if
+ *			it was not set in the first place.
+ *    UT_BAD_ARG	If system is NULL or system_named is NULL
+ *			or empty. This is not returned if bitmap
+ *			is NULL since that is equivalent to the
+ *			bit not being set.
+ *    UT_UNKOWN		The system_name is not defined in the
+ *			system. Depending on the circumstances this
+ *			might not be considered an error.
+ *
+ * usage:
+ *    utRemoveNamedSystemFromRegistry( system, registry, system_name );
+ */
+ut_status
+utRemoveNamedSystemFromRegistry(
+    ut_system* const		system,
+    NamedSystemRegistry*	bitmap,
+    const char* const		system_name)
+{
+    int		idx = utFindNamedSystemIndex( system, system_name );
+    clearBit( bitmap, idx );
+    return ut_get_status();
+}
+/*
+ *
+ * UT_BAD_ARG	parameter null
+ * UT_OS	failure to allocate
+ *
+ * usage:
+ *    utRemoveNamedSystemFromRegistry( system, &registry, system_name );
+ */
+ut_status
+utRemoveNamedSystemFromRegistryLocation(
+    ut_system* const		system,
+    NamedSystemRegistry**	bitmapPointer,
+    const char* const		system_name)
+{
+    if( bitmapPointer )
+	return utRemoveNamedSystemFromRegistry( system, *bitmapPointer, system_name );
+    return UT_BAD_ARG;
+}
+
+/*
+ * Tests whether the "system_name" from the system is set in the bitmap.
+ *
+ * The bitmap parameter can be NULL, which is equivalent to a bitmap with
+ * no bits set.
+ *
+ * Returns:
+ *    non-zero	If the "system_name" is set in the bitmap provided.
+ *    0		If the "system_name" is not set in the bitmap provided
+ *		or if there is some error.
+ *
+ * ut_get_status() returns:
+ *	UT_SUCCESS	If all went well
+ *	UT_UNKNOWN	If "system_name" is not defined for the system
+ */
+int
+utNamedSystemIsInRegistry(
+    ut_system* const		system,
+    NamedSystemRegistry*	bitmap,
+    const char* const		system_name)
+{
+    ut_set_status( UT_SUCCESS );
+    return bitIsSet( bitmap,
+		utFindNamedSystemIndex( system, system_name ) );
+}
+
+int
+utNamedSystemIsInRegistryLocation(
+    ut_system* const		system,
+    NamedSystemRegistry**	bitmapPointer,
+    const char* const		system_name)
+{
+    if( bitmapPointer == NULL ) {
+        ut_set_status( UT_BAD_ARG );
+	return 0;
+    }
+    ut_set_status( UT_SUCCESS );
+    return utNamedSystemIsInRegistry( system, *bitmapPointer, system_name );
+}
+
+/*
+ * Frees the bitmap and any allocated storage within it.
+ */
+void
+utNamedSystemRegistryFree(
+    NamedSystemRegistry*	bitmap)
+{
+    bitmapFree( bitmap );
+}
+void
+utNamedSystemRegistryLocationFree(
+    NamedSystemRegistry**	bitmapPointer)
+{
+    if( bitmapPointer != NULL ) {
+        utNamedSystemRegistryFree(*bitmapPointer);
+        *bitmapPointer = NULL;
+    }
+}
+/*
+ * This is needed if the NameSystemRegistry is on the stack or
+ * part of another structure (instead of a pointer to it).
+ */
+void
+utNamedSystemRegistryInit(
+    NamedSystemRegistry*	bitmap)
+{
+    bitmapInit( bitmap );
+}
+/*
+ * This is needed to avoid a memory leak if the NameSystemRegistry
+ * is on the stack or part of another structure (instead of a
+ * pointer to it).
+ */
+void
+utNamedSystemRegistryReset(
+    NamedSystemRegistry*	bitmap)
+{
+    bitmapReset( bitmap );
 }
