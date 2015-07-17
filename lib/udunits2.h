@@ -1175,13 +1175,80 @@ ut_accept_visitor(
 
 
 /******************************************************************************
- * Named System Handling:
+ * String List Public API Functions::
  ******************************************************************************/
 typedef struct __ut_string_list ut_string_list;
-void ut_string_list_free( ut_string_list* list );
-int ut_string_list_length( const ut_string_list* const list );
-char* ut_string_list_element( const ut_string_list* const list, int element );
+/*
+ * Free all the allocated memory for the string list. Must be called on
+ * all ut_string_lists return by library functions.
+ */
+EXTERNL void
+ut_string_list_free(
+    ut_string_list* list);
+/*
+ * Return the number of elements in the list
+ */
+EXTERNL int
+ut_string_list_length(
+    const ut_string_list* const	list);
+/*
+ * Return the specified string from the list (zeor based)
+ */
+EXTERNL char*
+ut_string_list_element(
+    const ut_string_list* const	list,
+    int				element);
+/*
+ * Returns a malloc'd string containing all the list entries
+ * in the same order, with the separator string between each
+ * entry except finalSeparator between the last two.
+ *
+ * If the list argument is NULL then NULL is returned.
+ *
+ * For the ut_string_list:
+ *	(red, green, yellow, blue)
+ * After:
+ *   char *foo = ut_string_list_implode(list,", "," and ");
+ * foo contains: "red, green, yellow and blue"
+ *
+ * After:
+ *   char *foo = ut_string_list_implode(list,", ",NULL);
+ * foo contains: "red, green, yellow, blue"
+ *
+ */
+EXTERNL char*
+ut_string_list_implode(
+    const ut_string_list* const	list,
+    const char* const		separator,
+    const char* const		finalSeparator);
 
+/*
+ * Returns a pointer ut_string_list created by separating
+ * the input string into pieces in the inverse of what
+ * implode does.
+ *
+ * After:
+ *   list = ut_string_list_explode("red, green, yellow and blue", "," and ");
+ * list contains: (red, green, yellow, blue)
+ *
+ * After:
+ *   list = ut_string_list_implode("red, green, yellow, blue",", ",NULL);
+ * list contains: (red, green, yellow, blue)
+ *
+ * There is currently no mechanism to embed separators within a string
+ * (i.e., there is no way to escape separators)
+ *
+ */
+EXTERNL ut_string_list*
+ut_string_explode(
+    const char* const		string,
+    const char* const		separator,
+    const char* const		finalSeparator);
+
+
+/******************************************************************************
+ * Named Units System Handling:
+ ******************************************************************************/
 
 /*
  * Adds a units system name to a unit-system.  A units system name is something
@@ -1226,40 +1293,143 @@ ut_add_named_system(
 EXTERNL ut_status
 ut_map_name_to_named_system(
     ut_system* const	system,
-    const char* const	name,		/* New name */
+    const char* const	new_name,	/* New name */
     const ut_encoding	encoding,
     const char* const	named_system);	/* Existing name */
 
 /*
- *  Get the list of the primary named unit systems for the system.
- *  That is, only unique named units systems will be returned.
+ * Get the list of the primary named unit systems for the system.
+ * In other words, only unique named units systems will be returned.
  *
- *  Returns
- *    NULL		If system == NULL or has no named systems defined
- *    ut_string_list*	Containing the list of unique selected units
- *			system names.
+ * The returned string list is sorted alphabetically.
+ *
+ * Arguments:
+ *	system		The system to return the primary
+ *			system names for.
+ * Returns:
+ *	NULL		If system argument was NULL.
+ *			ut_get_status() returns UT_BAD_ARG.
+ *	ut_string_list*	Containing the list of unique units
+ *			system names, which could be empty.
+ *			ut_get_status() returns UT_SUCCESS.
  */
 EXTERNL ut_string_list*
 ut_get_named_systems(
     const ut_system* const system);
 
 /*
- *  Get the list of named unit systems for the system.
+ * Get the list of named unit systems for the system that are
+ * aliases for the "system_name" (including "system_name").
  *
- *  If system_name is
- *    "System name"	Get aliases of named units system
- *    Empty string ("")	Get all primary unit system names
- *    NULL		Get all the defined named unit systems
+ * The returned string list is sorted alphabetically.
  *
- *  Returns
- *    NULL		If system == NULL or has no named systems defined
- *    ut_string_list*	Containing the list of selected units
- *			system names per the system_name parameter.
+ * Arguments:
+ *	system		The system to return the primary
+ *			system names for.
+ *	system_name	String that determines the unit
+ *			system names to return.
+ *	    If system_name is:
+ *		System name	Gets all aliases of the
+ *				named units system
+ *		Empty string	Gets all primary unit
+ *				system names
+ *		NULL		Gets all the defined
+ *				named unit systems
+ * Returns:
+ *	NULL		If system argument was NULL
+ *			ut_get_status() returns UT_BAD_ARG.
+ *	ut_string_list*	Containing the list of selected units
+ *			system names per the system_name
+ *			argument, which could be empty.
+ *			ut_get_status() returns UT_SUCCESS.
  */
 EXTERNL ut_string_list*
 ut_get_named_system_aliases(
     const ut_system* const	system,
     const char* const		system_name);
+
+/*
+ *  Specifies that the unit passed is part of the named unit system
+ *  whose name is passed as the second argument. For example, specifying
+ *  that centimeters is part of the metric system would look like:
+ *
+ *    ut_unit *cm = ut_get_unit_by_name( system, "centimeter" );
+ *    ud_add_unit_to_named_syste( cm, "metric system" );
+ *
+ *  Note that if the named unit system does not exist it is silently
+ *  created. This might be an issue since an encoding is not set.
+ *
+ *  Returns:
+ *	UT_BAD_ARG	If unit or system name are NULL or an emptry
+ *			string is passed for the system_name.
+ *	UT_OS		For failures allocating space, etc.
+ *	UT_SUCCESS	If successfully added.
+ */
+EXTERNL ut_status
+ut_add_unit_to_named_system(
+    const ut_unit* const	unit,
+    const char* const		system_name);
+
+/*
+ *  Specifies that the unit passed is not part of the named unit system
+ *  whose name is passed as the second argument. For example, specifying
+ *  that centimeters is not part of the US system would look like:
+ *
+ *    ut_unit *cm = ut_get_unit_by_name( system, "centimeter" );
+ *    ut_remove_unit_from_named_system( cm, "US system" );
+ *
+ *  Note that if the named unit system does not exist or the unit
+ *  is not part of the named unit system this function does nothing.
+ *
+ *  Returns:
+ *	UT_BAD_ARG	If unit or system name are NULL or an emptry
+ *			string is passed for the system_name.
+ *	UT_OS		For failures allocating space, etc.
+ *	UT_UNKNOWN	If the system_name does not exist.
+ *	UT_SUCCESS	If successfully removed.
+ */
+EXTERNL ut_status
+ut_remove_unit_from_named_system(
+    const ut_unit* const	unit,
+    const char* const		system_name);
+
+/*
+ * Tests whether the given unit is member of the named system.
+ *
+ * Arguments:
+ *	unit		The unit to test
+ *	system_name	The unit system to be checked (e.g., SI, metric, US, etc.)
+ * Returns:
+ *	NULL	No or Failure.  "ut_get_status()" will be
+ *		    UT_BAD_ARG	"system_name" or "unit" is NULL.
+ *		    UT_UNKNOWN	"system_name" is not defined for the system the unit belongs to.
+ *		    UT_SUCCESS	the unit is not in the named units system
+ *	else	non-zero indicating the unit was found in the named units system.
+ */
+EXTERNL int
+ut_is_in_named_system(
+    const ut_unit* const	unit,
+    const char* const		system_name);
+
+/*
+ * Get the list of named unit systems that the given unit is a
+ * member of. This gets just the primary names, that is one
+ * string per named unit system..
+ *
+ * The returned string list is sorted alphabetically.
+ *
+ * Arguments:
+ *    unit		The unit to get the system names for..
+ * Returns:
+ *    NULL		If unit argument was NULL
+ *			ut_get_status() returns UT_BAD_ARG.
+ *    ut_string_list*	Containing the list of names,
+ *			which could be empty. ut_get_status()
+ *			returns UT_SUCCESS.
+ */
+EXTERNL ut_string_list*
+ut_get_named_systems_for_unit(
+    const ut_unit* const	unit);
 
 
 /******************************************************************************

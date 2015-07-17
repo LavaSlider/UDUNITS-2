@@ -45,13 +45,13 @@ typedef struct Bitmap NamedSystemRegistry;
  *
  * usage:
  *     NamedSystemRegistry*	registry = NULL;
- *     registry = utAddNamedSystemToRegistry( system, registry, system_name );
+ *     registry = utSetNamedSystemInRegistry( system, registry, system_name );
  *     if( ut_get_status() != UT_SUCCESS ) {
  *	   fprintf( stderr, "Problem\n" );
  *     }
  */
 NamedSystemRegistry*
-utAddNamedSystemToRegistry(
+utSetNamedSystemInRegistry(
     ut_system* const		system,
     NamedSystemRegistry*	bitmap,
     const char* const		system_name);
@@ -109,7 +109,7 @@ utNamedSystemRegistryFree(
 /*=====================================================================================*/
 /* These should probably go away... */
 ut_status
-utAddNamedSystemToRegistryLocation(
+utSetNamedSystemInRegistryLocation(
     ut_system* const		system,
     NamedSystemRegistry**	bitmapPointer,
     const char* const		system_name);

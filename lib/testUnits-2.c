@@ -25,6 +25,7 @@
 
 #include "udunits2.h"
 #include "named_system.h"
+#include "ut_lists.h"
 
 static const char*  xmlPath;
 static ut_system*	unitSystem;
@@ -85,6 +86,213 @@ teardown(
     return 0;
 }
 
+
+ut_string_list*
+ut_string_explode(
+    const char* const	_string,
+    const char* const	_separator,
+    const char* const	_finalSeparator);
+
+static void
+test_string_list(void)
+{
+    ut_string_list* list1 = NULL;
+    char* str1 = "hello";
+    char* str2 = "world";
+    char* str3 = "goodbye";
+    char* tmp;
+
+    CU_ASSERT_PTR_NULL(ut_string_list_implode(NULL,"-","="));
+
+    list1 = ut_string_list_new();
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    CU_ASSERT_PTR_NOT_NULL((tmp = ut_string_list_implode(list1,"-","=")));
+    free(tmp);
+    ut_string_list_free(list1);
+
+    ut_string_list_free(NULL);
+
+    list1 = ut_string_list_new_with_capacity( -3 );
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    ut_string_list_free(list1);
+    list1 = ut_string_list_new_with_capacity( 0 );
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    ut_string_list_free(list1);
+    list1 = ut_string_list_new_with_capacity( 10 );
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    ut_string_list_free(list1);
+
+    list1 = ut_string_list_new();
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(NULL), 0);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 0);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(NULL,0));
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,-20));
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,0));
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,7));
+    ut_string_list_add_element(NULL, NULL);
+    ut_string_list_add_element(NULL, str1);
+    ut_string_list_add_element(list1, str1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 1);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,NULL)),str1);
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,"=")),str1);
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-",NULL)),str1);
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-","=")),str1);
+    free(tmp);
+    ut_string_list_add_element(list1, NULL);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 2);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,-20));
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,2));
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,NULL)),str1);
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,"=")),"hello=");
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-",NULL)),"hello-");
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-","=")),"hello=");
+    free(tmp);
+    ut_string_list_add_element(list1, str2);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 3);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,3));
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,NULL)),"helloworld");
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,"=")),"hello=world");
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-",NULL)),"hello--world");
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-","=")),"hello-=world");
+    free(tmp);
+    ut_string_list_truncate_waste(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 3);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,3));
+    ut_string_list_add_element(list1, str3);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,3), str3);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), str3);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,4));
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,NULL)),"helloworldgoodbye");
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,"=")),"helloworld=goodbye");
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-",NULL)),"hello--world-goodbye");
+    free(tmp);
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-","=")),"hello--world=goodbye");
+    free(tmp);
+    ut_string_list_free(list1);
+
+    list1 = ut_string_list_new_with_capacity( 10 );
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(NULL), 0);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 0);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(NULL,0));
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,-20));
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,0));
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,7));
+    ut_string_list_add_element(NULL, NULL);
+    ut_string_list_add_element(NULL, str1);
+    ut_string_list_add_element(list1, str1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 1);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    ut_string_list_add_element(list1, NULL);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 2);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,-20));
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,2));
+    ut_string_list_add_element(list1, str2);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 3);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,3));
+    ut_string_list_truncate_waste(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 3);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,3));
+    ut_string_list_add_element(list1, str3);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,3), str3);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), str3);
+    CU_ASSERT_PTR_NULL(ut_string_list_element(list1,4));
+    ut_string_list_free(list1);
+
+    list1 = ut_string_explode( NULL,",",NULL );
+    CU_ASSERT_PTR_NULL(list1);
+    list1 = ut_string_explode( "zero,one,two,three",NULL,NULL );
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero,one,two,three");
+    ut_string_list_free(list1);
+    list1 = ut_string_explode( "zero,one,two,three",",",NULL );
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
+    list1 = ut_string_explode( "zero,,two,three",",",NULL );
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
+    ut_string_list_free(list1);
+    list1 = ut_string_explode( "zero, one, two, three",", ",NULL );
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
+    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,", "," and ")),"zero, one, two and three");
+    ut_string_list_free(list1);
+    list1 = ut_string_explode( tmp,", "," and " );
+    free(tmp);
+    CU_ASSERT_PTR_NOT_NULL(list1);
+    CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
+    ut_string_list_free(list1);
+}
 
 int utFindNamedSystemIndex( ut_system* const system, const char* const system_name );
 
@@ -170,8 +378,32 @@ test_named_system_name_getting(void)
     ut_string_list* namedSystems;
 
     CU_ASSERT_PTR_NULL(ut_get_named_systems( NULL ));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
     CU_ASSERT_PTR_NOT_NULL(system);
-    CU_ASSERT_PTR_NULL(ut_get_named_systems( system ));
+    CU_ASSERT_PTR_NULL(ut_get_named_system_aliases( NULL, NULL ));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+
+    namedSystems = ut_get_named_systems( system );
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),0);
+    ut_string_list_free( namedSystems );
+
+    namedSystems = ut_get_named_system_aliases( system, NULL );
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),0);
+    ut_string_list_free( namedSystems );
+    namedSystems = ut_get_named_system_aliases( system, "" );
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),0);
+    ut_string_list_free( namedSystems );
+    namedSystems = ut_get_named_system_aliases( system, "US" );
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),0);
+    ut_string_list_free( namedSystems );
 
     CU_ASSERT_EQUAL(ut_add_named_system(system, "SI", UT_ASCII), UT_SUCCESS);
     CU_ASSERT_EQUAL(ut_add_named_system(system, "Metric", UT_ASCII), UT_SUCCESS);
@@ -188,6 +420,8 @@ test_named_system_name_getting(void)
     CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "US Conventional System", UT_ASCII, "US"), UT_SUCCESS);
     CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "US Common", UT_ASCII, "US"), UT_SUCCESS);
     CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "US Common System", UT_ASCII, "US"), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "US Common System", UT_ASCII, "SI"), UT_EXISTS);
+    CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "US Common System", UT_ASCII, "US Common"), UT_SUCCESS);
     namedSystems = ut_get_named_systems( system );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),3);
@@ -243,12 +477,15 @@ int bitmapCmp( const Bitmap* b1, const Bitmap* b2 );
 int bitIsSet( Bitmap* bitmap, int i );
 int setBit( Bitmap *bitmap, int i );
 int clearBit( Bitmap *bitmap, int i );
+int snprintfBitmap( char *buf, size_t size, const char *fmt, Bitmap *bitmap);
 
 static void
 test_bitmap(void)
 {
     Bitmap *membership;
     Bitmap *membership2;
+    char	buf[1024];
+    int		size = 1024;
 
     membership = bitmapNew();
     CU_ASSERT_PTR_NOT_NULL(membership);
@@ -260,13 +497,61 @@ test_bitmap(void)
     CU_ASSERT_FALSE(setBit(NULL, 0));
     CU_ASSERT_FALSE(setBit(membership, -1));
     CU_ASSERT_FALSE(setBit(membership, 2));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),1);
+    CU_ASSERT_STRING_EQUAL(buf, "4");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#x", membership),3);
+    CU_ASSERT_STRING_EQUAL(buf, "0x4");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#0x", membership),3);
+    CU_ASSERT_STRING_EQUAL(buf, "0x4");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0x004");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0x004");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "  0x4");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0x4  ");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#X", membership),3);
+    CU_ASSERT_STRING_EQUAL(buf, "0X4");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),3);
+    CU_ASSERT_STRING_EQUAL(buf, "100");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#b", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0b100");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#9b", membership),9);
+    CU_ASSERT_STRING_EQUAL(buf, "    0b100");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-9b", membership),9);
+    CU_ASSERT_STRING_EQUAL(buf, "0b100    ");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#09b", membership),9);
+    CU_ASSERT_STRING_EQUAL(buf, "0b0000100");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-09b", membership),9);
+    CU_ASSERT_STRING_EQUAL(buf, "0b0000100");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),1);
+    CU_ASSERT_STRING_EQUAL(buf, "4");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#o", membership),2);
+    CU_ASSERT_STRING_EQUAL(buf, "04");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#9o", membership),9);
+    CU_ASSERT_STRING_EQUAL(buf, "       04");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-9o", membership),9);
+    CU_ASSERT_STRING_EQUAL(buf, "04       ");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#09o", membership),9);
+    CU_ASSERT_STRING_EQUAL(buf, "000000004");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-09o", membership),9);
+    CU_ASSERT_STRING_EQUAL(buf, "000000004");
     CU_ASSERT_FALSE(bitIsSet(membership, 0));
     CU_ASSERT_FALSE(bitIsSet(membership, 1));
     CU_ASSERT_TRUE(bitIsSet(membership, 2));
     CU_ASSERT_FALSE(bitIsSet(membership, 3));
-    CU_ASSERT_FALSE(bitIsSet(membership, 95));
-    CU_ASSERT_FALSE(setBit(membership, 95));
-    CU_ASSERT_TRUE(bitIsSet(membership, 95));
+    CU_ASSERT_FALSE(bitIsSet(membership, 71));
+    CU_ASSERT_FALSE(setBit(membership, 71));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "800000000000000004");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),24);
+    CU_ASSERT_STRING_EQUAL(buf, "400000000000000000000004");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, 7, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "800000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),72);
+    CU_ASSERT_STRING_EQUAL(buf, "100000000000000000000000000000000000000000000000000000000000000000000100");
+    CU_ASSERT_TRUE(bitIsSet(membership, 71));
     CU_ASSERT_TRUE(setBit(membership, 2));
     CU_ASSERT_FALSE(bitIsSet(membership, 0));
     CU_ASSERT_FALSE(bitIsSet(membership, 1));
@@ -280,6 +565,12 @@ test_bitmap(void)
     CU_ASSERT_FALSE(bitIsSet(membership, 2));
     CU_ASSERT_FALSE(clearBit(membership, 2));
     CU_ASSERT_FALSE(clearBit(membership, 2400));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "800000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),24);
+    CU_ASSERT_STRING_EQUAL(buf, "400000000000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),72);
+    CU_ASSERT_STRING_EQUAL(buf, "100000000000000000000000000000000000000000000000000000000000000000000000");
 
     // Bitmap comparison testing
     CU_ASSERT_TRUE(bitmapCmp(NULL, NULL) == 0);
@@ -313,6 +604,98 @@ test_bitmap(void)
     CU_ASSERT_TRUE(bitmapCmp(membership2, membership) == 0);
 
     bitmapReset( membership );
+    CU_ASSERT_FALSE(setBit(membership, 70));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "400000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),24);
+    CU_ASSERT_STRING_EQUAL(buf, "200000000000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),71);
+    CU_ASSERT_STRING_EQUAL(buf, "10000000000000000000000000000000000000000000000000000000000000000000000");
+
+    bitmapReset( membership );
+    CU_ASSERT_FALSE(setBit(membership, 69));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "200000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),24);
+    CU_ASSERT_STRING_EQUAL(buf, "100000000000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),70);
+    CU_ASSERT_STRING_EQUAL(buf, "1000000000000000000000000000000000000000000000000000000000000000000000");
+
+    bitmapReset( membership );
+    CU_ASSERT_FALSE(setBit(membership, 68));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "100000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),23);
+    CU_ASSERT_STRING_EQUAL(buf, "40000000000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),69);
+    CU_ASSERT_STRING_EQUAL(buf, "100000000000000000000000000000000000000000000000000000000000000000000");
+    // Extend it
+    CU_ASSERT_FALSE(setBit(membership, 65));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "120000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),23);
+    CU_ASSERT_STRING_EQUAL(buf, "44000000000000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),69);
+    CU_ASSERT_STRING_EQUAL(buf, "100100000000000000000000000000000000000000000000000000000000000000000");
+    // Extend some more
+    CU_ASSERT_FALSE(setBit(membership, 32));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "120000000100000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),23);
+    CU_ASSERT_STRING_EQUAL(buf, "44000000000040000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),69);
+    CU_ASSERT_STRING_EQUAL(buf, "100100000000000000000000000000000000100000000000000000000000000000000");
+    // Extend some more
+    CU_ASSERT_FALSE(setBit(membership, 31));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "120000000180000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),23);
+    CU_ASSERT_STRING_EQUAL(buf, "44000000000060000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),69);
+    CU_ASSERT_STRING_EQUAL(buf, "100100000000000000000000000000000000110000000000000000000000000000000");
+    // Extend some more
+    CU_ASSERT_FALSE(setBit(membership, 30));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "1200000001c0000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),23);
+    CU_ASSERT_STRING_EQUAL(buf, "44000000000070000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),69);
+    CU_ASSERT_STRING_EQUAL(buf, "100100000000000000000000000000000000111000000000000000000000000000000");
+    // Extend some more
+    CU_ASSERT_FALSE(setBit(membership, 29));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "1200000001e0000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),23);
+    CU_ASSERT_STRING_EQUAL(buf, "44000000000074000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),69);
+    CU_ASSERT_STRING_EQUAL(buf, "100100000000000000000000000000000000111100000000000000000000000000000");
+    // Extend some more
+    CU_ASSERT_FALSE(setBit(membership, 33));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "1200000003e0000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),23);
+    CU_ASSERT_STRING_EQUAL(buf, "44000000000174000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),69);
+    CU_ASSERT_STRING_EQUAL(buf, "100100000000000000000000000000000001111100000000000000000000000000000");
+    // Extend some more
+    CU_ASSERT_TRUE(clearBit(membership, 32));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),18);
+    CU_ASSERT_STRING_EQUAL(buf, "1200000002e0000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),23);
+    CU_ASSERT_STRING_EQUAL(buf, "44000000000134000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%b", membership),69);
+    CU_ASSERT_STRING_EQUAL(buf, "100100000000000000000000000000000001011100000000000000000000000000000");
+
+    bitmapReset( membership );
+    CU_ASSERT_PTR_NOT_NULL(membership);
+    CU_ASSERT_FALSE(setBit(membership, 962));
+    CU_ASSERT_TRUE(bitIsSet(membership, 962));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, 15, "%b", membership), 963);
+    CU_ASSERT_STRING_EQUAL(buf, "10000000000000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, 15, "%#b", membership), 965);
+    CU_ASSERT_STRING_EQUAL(buf, "0b100000000000");
+
+    bitmapReset( membership );
     CU_ASSERT_PTR_NOT_NULL(membership);
     bitmapReset( membership2 );
     CU_ASSERT_PTR_NOT_NULL(membership2);
@@ -321,7 +704,85 @@ test_bitmap(void)
     CU_ASSERT_TRUE(bitmapCmp(membership, membership2) < 0);
     CU_ASSERT_TRUE(bitmapCmp(membership2, membership) > 0);
 
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", NULL),6);
+    CU_ASSERT_STRING_EQUAL(buf, "(null)");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, 5, "%x", NULL),6);
+    CU_ASSERT_STRING_EQUAL(buf, "(nul");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "hello %x goodbye", NULL),20);
+    CU_ASSERT_STRING_EQUAL(buf, "hello (null) goodbye");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "hello %#05x goodbye", NULL),20);
+    CU_ASSERT_STRING_EQUAL(buf, "hello (null) goodbye");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, 8, "hello %#05x goodbye", NULL),20);
+    CU_ASSERT_STRING_EQUAL(buf, "hello (");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, 4, "hello %#05x goodbye", NULL),20);
+    CU_ASSERT_STRING_EQUAL(buf, "hel");
 
+    bitmapReset( membership );
+    CU_ASSERT_PTR_NOT_NULL(membership);
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),1);
+    CU_ASSERT_STRING_EQUAL(buf, "0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#x", membership),1);
+    CU_ASSERT_STRING_EQUAL(buf, "0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%-05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "    0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0    ");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "    0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%-5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0    ");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%o", membership),1);
+    CU_ASSERT_STRING_EQUAL(buf, "0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#o", membership),1);
+    CU_ASSERT_STRING_EQUAL(buf, "0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%05o", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%-05o", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#05o", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-05o", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#5o", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "    0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-5o", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0    ");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%5o", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "    0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%-5o", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0    ");
+    CU_ASSERT_FALSE(setBit(membership, 232));
+    CU_ASSERT_TRUE(bitIsSet(membership, 232));
+    CU_ASSERT_TRUE(clearBit(membership, 232));
+    CU_ASSERT_FALSE(bitIsSet(membership, 232));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership),1);
+    CU_ASSERT_STRING_EQUAL(buf, "0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#x", membership),1);
+    CU_ASSERT_STRING_EQUAL(buf, "0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%-05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-05x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "00000");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "    0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#-5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0    ");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "    0");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%-5x", membership),5);
+    CU_ASSERT_STRING_EQUAL(buf, "0    ");
     bitmapReset( membership );
     CU_ASSERT_PTR_NOT_NULL(membership);
     bitmapReset( membership2 );
@@ -330,6 +791,16 @@ test_bitmap(void)
     CU_ASSERT_TRUE(bitmapCmp(membership2, membership) == 0);
     CU_ASSERT_FALSE(setBit(membership, 2));
     CU_ASSERT_FALSE(setBit(membership2, 3));
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%x", membership2),1);
+    CU_ASSERT_STRING_EQUAL(buf, "8");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "some text before with a %sign in it %x", membership2),36);
+    CU_ASSERT_STRING_EQUAL(buf, "some text before with a 8ign in it x");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "some text before with a %%sign in it %x", membership2),37);
+    CU_ASSERT_STRING_EQUAL(buf, "some text before with a %sign in it 8");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#x some text after with a %sign in it", membership2),37);
+    CU_ASSERT_STRING_EQUAL(buf, "0x8 some text after with a sign in it");
+    CU_ASSERT_EQUAL(snprintfBitmap( buf, size, "%#x some text after with a %%sign in it", membership2),38);
+    CU_ASSERT_STRING_EQUAL(buf, "0x8 some text after with a %sign in it");
     CU_ASSERT_TRUE(bitmapCmp(membership, membership2) < 0);
     CU_ASSERT_TRUE(bitmapCmp(membership2, membership) > 0);
     CU_ASSERT_TRUE(clearBit(membership2, 3));
@@ -376,32 +847,32 @@ test_named_system_registry(void)
     CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
 
-    registry = utAddNamedSystemToRegistry(NULL, registry, "SI");
+    registry = utSetNamedSystemInRegistry(NULL, registry, "SI");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    registry = utAddNamedSystemToRegistry(system, registry, NULL);
+    registry = utSetNamedSystemInRegistry(system, registry, NULL);
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    registry = utAddNamedSystemToRegistry(system, registry, "");
+    registry = utSetNamedSystemInRegistry(system, registry, "");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    registry = utAddNamedSystemToRegistry(system, registry, "SI");
+    registry = utSetNamedSystemInRegistry(system, registry, "SI");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_TRUE(utNamedSystemIsInRegistry(system, registry, "SI"));
 
-    registry = utAddNamedSystemToRegistry(NULL, registry, "SI");
+    registry = utSetNamedSystemInRegistry(NULL, registry, "SI");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    registry = utAddNamedSystemToRegistry(system, registry, NULL);
+    registry = utSetNamedSystemInRegistry(system, registry, NULL);
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    registry = utAddNamedSystemToRegistry(system, registry, "");
+    registry = utSetNamedSystemInRegistry(system, registry, "");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
 
     CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "US"));
-    registry = utAddNamedSystemToRegistry(system, registry, "US");
+    registry = utSetNamedSystemInRegistry(system, registry, "US");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_TRUE(utNamedSystemIsInRegistry(system, registry, "SI"));
@@ -450,32 +921,32 @@ test_named_system_registry_location(void)
     CU_ASSERT_FALSE(utNamedSystemIsInRegistryLocation(system, &registry, "SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
 
-    utAddNamedSystemToRegistryLocation(NULL, &registry, "SI");
+    utSetNamedSystemInRegistryLocation(NULL, &registry, "SI");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    utAddNamedSystemToRegistryLocation(system, &registry, NULL);
+    utSetNamedSystemInRegistryLocation(system, &registry, NULL);
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    utAddNamedSystemToRegistryLocation(system, &registry, "");
+    utSetNamedSystemInRegistryLocation(system, &registry, "");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    utAddNamedSystemToRegistryLocation(system, &registry, "SI");
+    utSetNamedSystemInRegistryLocation(system, &registry, "SI");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_TRUE(utNamedSystemIsInRegistryLocation(system, &registry, "SI"));
 
-    utAddNamedSystemToRegistryLocation(NULL, &registry, "SI");
+    utSetNamedSystemInRegistryLocation(NULL, &registry, "SI");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    utAddNamedSystemToRegistryLocation(system, &registry, NULL);
+    utSetNamedSystemInRegistryLocation(system, &registry, NULL);
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    utAddNamedSystemToRegistryLocation(system, &registry, "");
+    utSetNamedSystemInRegistryLocation(system, &registry, "");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
 
     CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "US"));
-    utAddNamedSystemToRegistryLocation(system, &registry, "US");
+    utSetNamedSystemInRegistryLocation(system, &registry, "US");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_TRUE(utNamedSystemIsInRegistryLocation(system, &registry, "SI"));
@@ -512,6 +983,138 @@ test_named_system_registry_location(void)
     ut_free_system(system);
 }
 
+static void
+test_named_system_public_interface(void)
+{
+    ut_system*	system	= NULL;
+    ut_unit*	unit1	= NULL;
+    ut_unit*	unit2	= NULL;
+    ut_unit*	unit3	= NULL;
+    ut_unit*	unit4	= NULL;
+    char	*systemName1 = "SI";
+    char	*systemName2 = "US";
+
+    system = ut_new_system();
+    CU_ASSERT_PTR_NOT_NULL(system);
+
+    unit1 = ut_new_base_unit( system );
+    CU_ASSERT_PTR_NOT_NULL(unit1);
+    unit2 = ut_new_dimensionless_unit( system );
+    CU_ASSERT_PTR_NOT_NULL(unit2);
+    unit3 = ut_clone( unit1 );
+    CU_ASSERT_PTR_NOT_NULL(unit3);
+    unit4 = ut_new_base_unit( system );
+    CU_ASSERT_PTR_NOT_NULL(unit4);
+
+    CU_ASSERT_FALSE(ut_is_in_named_system(NULL,NULL));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_FALSE(ut_is_in_named_system(NULL,""));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_FALSE(ut_is_in_named_system(NULL,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,NULL));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,""));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,"NoSuchSystem"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(NULL,NULL), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(NULL,systemName1), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,NULL), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,""), UT_BAD_ARG);
+
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName1 has not been added
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName1 has not been added
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit3,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName1 has not been added
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,systemName1), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// Should this be UNKNOWN or SUCCESS?
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,systemName1), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// Should this be UNKNOWN or SUCCESS?
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName2 has not been added
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName2 has not been added
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit3,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName2 has not been added
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,systemName2), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// Should this be UNKNOWN or SUCCESS?
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit2,systemName2), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName1));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit2,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName2));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+
+    ut_string_list* namedSystems;
+    CU_ASSERT_PTR_NULL(ut_get_named_systems_for_unit( NULL ));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    namedSystems = ut_get_named_systems_for_unit( unit4 );
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),0);
+    ut_string_list_free( namedSystems );
+    namedSystems = ut_get_named_systems_for_unit( unit1 );
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), systemName1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), systemName2);
+    ut_string_list_free( namedSystems );
+    namedSystems = ut_get_named_systems_for_unit( unit2 );
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), systemName2);
+    ut_string_list_free( namedSystems );
+
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(NULL,NULL), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(NULL,"NoSuchSystem"), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(NULL,systemName2), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit2,NULL), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit2,"NoSuchSystem"), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit4,systemName2), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit2,systemName2), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName1));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName1));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit4,systemName1));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName2));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName2));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName2));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit4,systemName2));
+
+    ut_free(unit1);
+    ut_free(unit2);
+    ut_free(unit3);
+    ut_free(unit4);
+    ut_free_system(system);
+}
+
 int
 main(
     const int		    argc,
@@ -527,11 +1130,13 @@ main(
 	CU_Suite*	testSuite = CU_add_suite(__FILE__, setup, teardown);
 
 	if (testSuite != NULL) {
+	    CU_ADD_TEST(testSuite, test_string_list);
 	    CU_ADD_TEST(testSuite, test_named_system);
 	    CU_ADD_TEST(testSuite, test_named_system_name_getting);
 	    CU_ADD_TEST(testSuite, test_bitmap);
 	    CU_ADD_TEST(testSuite, test_named_system_registry);
 	    CU_ADD_TEST(testSuite, test_named_system_registry_location);
+	    CU_ADD_TEST(testSuite, test_named_system_public_interface);
 	    /*
 	    */
 
