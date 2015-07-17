@@ -13,6 +13,8 @@ libudunits2_la_SOURCES = unitcore.c converter.c formatter.c \
     unitToIdMap.c unitToIdMap.h \
     unitAndId.c unitAndId.h \
     systemMap.c systemMap.h \
+    bitmap.c bitmap.h \
+    ut_lists.c ut_lists.h \
     named_system.c named_system.h \
     prefix.c prefix.h \
     parser.y \
