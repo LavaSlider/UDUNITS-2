@@ -1338,6 +1338,7 @@ __ut_get_named_system_aliases(
     const char* const		system_name,
     const ut_unit* const	unit)
 {
+    ut_set_status(UT_SUCCESS);
     ut_string_list* list = NULL;
     if (system != NULL /*&& systemToNameToIndex != NULL*/) {
 	NamedSystemToIndexMap** const namedSystemToIndex =
@@ -1359,6 +1360,11 @@ __ut_get_named_system_aliases(
 		}
 		/* system_name given ==> get aliases for it */
 		else {
+		    // This will return unique/primary names if the
+		    // system_name is not found. The user will have
+		    // no indication that the list is not the correct
+		    // list unless he/she tests ut_get_status() for
+		    // UT_UNKNOWN.
 		    __aliasesOf = utFindNamedSystemIndex(system, system_name);
 		    __doUniq = 0;	// Not primary
 		    __doAll = 0;	// Not all
@@ -1379,6 +1385,8 @@ __ut_get_named_system_aliases(
 			__aliasesOf = -1; // Not aliases of anything
 			__doUniq = 0;	  // Not primary
 			__doAll = 0;	  // Don't them all
+			// This is still success, however, just no systems
+			ut_set_status(UT_SUCCESS);
 		    }
 		}
 		/* allocate an empty list with adequate capacity */
@@ -1389,10 +1397,18 @@ __ut_get_named_system_aliases(
 		__name_list = NULL;
 		__registry = NULL;
 	    }
+	    else {
+		list = ut_string_list_new();
+		ut_set_status(UT_SUCCESS);
+	    }
 	}
 	else {
 	    list = ut_string_list_new();
+	    ut_set_status(UT_SUCCESS);
 	}
+    }
+    else {
+	ut_set_status(UT_BAD_ARG);
     }
     return list;
 }
