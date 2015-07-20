@@ -596,56 +596,57 @@ findOrAddNamedSystem(
     int				index,
     int				(*compare)(const void*, const void*))
 {
-    const NamedSystemSearchEntry* entry = NULL; /* Error, could not be added or not found */
+    const NamedSystemSearchEntry* entry = NULL; /* Could not be added or not found */
     ut_status		status = UT_UNKNOWN;
-    // Make this function universion search/find (i.e., can add or not)
+    // To make this function universal search/find (i.e., can add or not)
+    // use whether a compare function is passed to know if the caller
+    // wants non-existent entries to be added.
     int	canAdd = (compare != NULL);
-    //printf("Entering findOrAddNamedSystem(system, systemMap, \"%s\", compare)\n", name);
-    //printf("- Can add name is %s\n", canAdd ? "TRUE" : "FALSE");
 
     if (system == NULL || systemMap == NULL ||
-	name == NULL || *name == '\0' ||
-	(!canAdd && *systemMap == NULL)) { // <--- maybe this should be UT_UNKNOWN or UT_SUCCESS??
-	//printf("- Status being set to UT_BAD_ARG for null pointer problem\n");
+	name == NULL || *name == '\0') {
 	status = UT_BAD_ARG;
     }
+    else if (!canAdd && *systemMap == NULL) {
+	// If there is no systemMap then the name must be unknown
+	status = UT_UNKNOWN;
+    }
     else {
+	// If there is no systemMap, try and create one
 	if (*systemMap == NULL && (*systemMap = smNew()) == NULL) {
-	    //printf("- Status being set to UT_OS for failure of smNew()\n");
 	    status = UT_OS;
 	}
 	else {
-	    NamedSystemToIndexMap** const namedSystemToIndex = (NamedSystemToIndexMap**) (canAdd
-			? smSearch(*systemMap, system)
-			: smFind(*systemMap, system));
+	    NamedSystemToIndexMap** const namedSystemToIndex = (NamedSystemToIndexMap**)
+		(canAdd ? smSearch(*systemMap, system)
+			:   smFind(*systemMap, system));
 
 	    if (namedSystemToIndex == NULL) {
-		//printf("- Status being set to %s for namedSystemToIndex being null\n",
-		//		canAdd ? "UT_OS" : "UT_UNKNOWN");
 		status = canAdd ? UT_OS : UT_UNKNOWN;
 	    }
 	    else {
-		if (canAdd && *namedSystemToIndex == NULL) {
-		    *namedSystemToIndex = nstimNew(compare);
-
-		    if (*namedSystemToIndex == NULL)
-			//printf("- Status being set to UT_OS for nstimNew returning NULL\n");
-			status = UT_OS;
+		if (canAdd && *namedSystemToIndex == NULL &&
+		   (*namedSystemToIndex = nstimNew(compare)) == NULL) {
+		    status = UT_OS;
 		}
 
 		if (*namedSystemToIndex != NULL) {
-		    entry = canAdd ? nstimSearch(*namedSystemToIndex, name, index)
-				   : nstimFind(*namedSystemToIndex, name);
+		    entry = canAdd ? nstimSearch(*namedSystemToIndex,name,index)
+				   :   nstimFind(*namedSystemToIndex,name);
 		    if (entry == NULL) {
-			//printf("- Status being set to UT_UNKNOWN for entry being NULL\n");
-			//status = UT_UNKNOWN;
+			// ??? Need to double check what nstimFind did with
+			// the status...
 			status = ut_get_status();
 		    }
 		    else {
-			//printf("- Status being set to UT_SUCCESS for non-NULL entry\n");
 			status = UT_SUCCESS;
 		    }			/* have named system entry */
 		}			/* have named system to index entry */
+		// If there is not *namedSystemToIndex then the named
+		// system does not exist. Set the status to unknown.
+		else {
+		    status = UT_UNKNOWN;
+		}
 	    }				/* have system-map entry */
 	}				/* have system-map */
     }					/* valid arguments */
@@ -690,9 +691,11 @@ utAddNamedSystem(
  *
  * Arguments:
  *	system		Pointer to the unit-system.
- *	system_name	Pointer to the system_name to search for. Case insensitive.
+ *	system_name	Pointer to the system_name to search for.
+ *			Case insensitive.
  * Returns:
- *	index	Success. The index value (zero to max) assigned to the named system
+ *	index	Success. The index value (zero to max) assigned to the
+ *			named system
  *	-1	Failure. String not found or error
  *		    ut_get_status() will return:
  *		    - UT_BAD_ARG	"string" or system was NULL.
@@ -956,6 +959,8 @@ utRemoveNamedSystemFromRegistry(
     const char* const		system_name)
 {
     int		idx = utFindNamedSystemIndex(system, system_name);
+    // if idx < 0 then system_name was not found...
+    // --- Need to make sure the status is set properly!
     clearBit(bitmap, idx);
     return ut_get_status();
 }
@@ -1071,6 +1076,19 @@ utNamedSystemRegistryReset(
  * If we are just finding (!canAdd) and the *systemMap is NULL
  *	This means there are no units in the tree, so this
  *	should mean the same as if the registry was found.
+ *	us_set_status UT_SUCCESS
+ *	Return NULL
+ * If we are just finding and it is not found this is a success
+ *	us_set_status UT_SUCCESS
+ *	Return NULL
+ *
+ * So, return is NULL if some error or not found.
+ *	The errors are:
+ *		NULL unit or systemMap (UT_BAD_ARG)
+ *		Tried to create something and failed (UT_OS)
+ *	No error sets UT_SUCCESS.
+ * the return is the UnitAndNamedSystemRegsitry entry if inserted or found.
+ *
  */
 static UnitAndNamedSystemRegistry*
 findOrAddUnitsSearchEntry(
@@ -1078,68 +1096,50 @@ findOrAddUnitsSearchEntry(
     const ut_unit* const	unit,
     int				(*compare)(const void*, const void*))
 {
-    UnitAndNamedSystemRegistry* entry = NULL; /* Error, could not be added or not found */
+    UnitAndNamedSystemRegistry* entry = NULL; /* could not be added or not found */
     ut_status		status = UT_UNKNOWN;
-    // Make this function universion search/find (i.e., can add or not)
+    // To make this function universal search/find (i.e., can add or not)
+    // use whether a compare function is passed to know if the caller
+    // want non-existent entries to be added.
     int	canAdd = (compare != NULL);
-    //printf("Entering findOrAddNamedSystem(system, systemMap, \"%s\", compare)\n", name);
-    //printf("- Can add name is %s\n", canAdd ? "TRUE" : "FALSE");
 
     if (unit == NULL || systemMap == NULL) {
-	//printf("------- Status being set to UT_BAD_ARG for null pointer problem\n");
 	status = UT_BAD_ARG;
     }
     else if (!canAdd && *systemMap == NULL) {
-	//printf("------- Status being set to UT_UNKNOWN since there is no systemMap\n");
-	status = UT_UNKNOWN;
+	status = UT_SUCCESS;
     }
     else {
-	if (*systemMap == NULL) {
-	    *systemMap = smNew();
-
-	    if (*systemMap == NULL)
-		//printf("- Status being set to UT_OS for failure of smNew()\n");
-		status = UT_OS;
+	if (*systemMap == NULL && (*systemMap = smNew()) == NULL) {
+	    status = UT_OS;
 	}
-
-	if (*systemMap != NULL) {
+	else {
 	    ut_system* system = ut_get_system(unit);
-	    UnitToRegistryMap** const unitToRegistry = (UnitToRegistryMap **) (canAdd
-			? smSearch(*systemMap, system)
+	    UnitToRegistryMap** const unitToRegistry = (UnitToRegistryMap **)
+		(canAdd ? smSearch(*systemMap, system)
 			:   smFind(*systemMap, system));
 
 	    if (unitToRegistry == NULL) {
-		//printf("- Status being set to %s for namedSystemToIndex being null\n",
-		//		canAdd ? "UT_OS" : "UT_UNKNOWN");
-		status = canAdd ? UT_OS : UT_UNKNOWN;
+		status = canAdd ? UT_OS : UT_SUCCESS;
 	    }
 	    else {
-		if (canAdd && *unitToRegistry == NULL) {
-		    *unitToRegistry = utrmNew(compare);
-
-		    if (*unitToRegistry == NULL)
-			//printf("- Status being set to UT_OS for nstimNew returning NULL\n");
-			status = UT_OS;
+		if (canAdd && *unitToRegistry == NULL &&
+		   (*unitToRegistry = utrmNew(compare)) == NULL) {
+		    status = UT_OS;
 		}
 
 		if (*unitToRegistry != NULL) {
 		    entry = canAdd ? utrmSearch(*unitToRegistry, unit)
 				   :   utrmFind(*unitToRegistry, unit);
-		    if (entry == NULL) {
-			//printf("- Status being set to UT_UNKNOWN for entry being NULL\n");
-			status = UT_UNKNOWN;
-		    }
-		    else {
-			//printf("- Status being set to UT_SUCCESS for non-NULL entry\n");
-			status = UT_SUCCESS;
-		    }			/* have named system entry */
-		} else {
+		    status = (entry == NULL && canAdd) ? UT_OS : UT_SUCCESS;
+		}
+		else {
 		    printf("------ unitToRegistry is NULL\n");
+		    status = UT_SUCCESS;
 		}			/* have named system to index entry */
 	    }				/* have system-map entry */
 	}				/* have system-map */
     }					/* valid arguments */
-    //printf("----- Leaving findOrAddUnitsSearchEntry(), settgin status to %d\n", (int) status);
     ut_set_status(status);
     return entry;
 }
@@ -1166,13 +1166,13 @@ utAddNamedSystemRegistryToUnit(
     return findOrAddUnitsSearchEntry(&systemToUnitToRegistry, unit, uansrCompare);
 }
 /*
- * Looks up the unit and returns its registry.
+ * Looks up the unit and returns its units and registry structure..
  *
  * Arguments:
  *	system		Pointer to the unit-system.
  *	unit		Pointer to the unit to search for. Case insensitive.
  * Returns:
- *	NamedSystemSearchEntry	on success
+ *	UnitAndNamedSystemRegistry* on success
  *	NULL			on failure
  *		    ut_get_status() will return:
  *		    - UT_BAD_ARG	"string" or system was NULL.
@@ -1199,9 +1199,11 @@ utFindNamedSystemRegistryForUnit(
  * Returns:
  *	NULL	No or Failure.  "ut_get_status()" will be
  *		    UT_BAD_ARG	"system_name" or "unit" is NULL.
- *		    UT_UNKNOWN	"system_name" is not defined for the system the unit belongs to.
+ *		    UT_UNKNOWN	"system_name" is not defined for the
+ *				system the unit belongs to.
  *		    UT_SUCCESS	the unit is not in the named units system
- *	else	non-zero indicating the unit was found in the named units system.
+ *	else	non-zero indicating the unit was found in the named
+ *		units system.
  */
 int
 ut_is_in_named_system(
@@ -1216,15 +1218,14 @@ ut_is_in_named_system(
     }
     else {
 	const UnitAndNamedSystemRegistry* entry = utFindNamedSystemRegistryForUnit(unit);
+	ut_system* system = ut_get_system(unit);
 	if (entry) {
-	    ut_system* system = ut_get_system(unit);
-	    //printf("-- Checking for \"%s\" within the registry\n", system_name);
 	    found = utNamedSystemIsInRegistry(system, entry->registry, system_name);
 	} else {
-	    // If the no registry could be foudn for the unit then it clearly
-	    // is not in the named system... so is this success??
-	    //printf("-- Did not find the unit entry when checking for \"%s\"\n", system_name);
-	    //printf("   ut_get_status() returns %d\n", (int) ut_get_status());
+	    // If the no registry could be found for the unit then it clearly
+	    // is not in the named system but this is only success if the
+	    // system_name exists.
+	    utFindNamedSystemIndex(system, system_name);
 	}
     }
 
@@ -1243,7 +1244,7 @@ ut_is_in_named_system(
  *  created. This might be an issue since an encoding is not set.
  *
  *  Returns:
- *	UT_BAD_ARG	If unit or system name are NULL or an emptry
+ *	UT_BAD_ARG	If unit or system name are NULL or an empty
  *			string is passed for the system_name.
  *	UT_OS		For failures allocating space, etc.
  *	UT_SUCCESS	If successfully added.
@@ -1276,14 +1277,15 @@ ut_add_unit_to_named_system(
  *    ut_remove_unit_from_named_system(cm, "US system");
  *
  *  Note that if the named unit system does not exist or the unit
- *  is not part of the named unit system this function does nothing.
+ *  is not part of the named unit system this function has no effect.
  *
  *  Returns:
- *	UT_BAD_ARG	If unit or system name are NULL or an emptry
+ *	UT_BAD_ARG	If unit or system name are NULL or an empty
  *			string is passed for the system_name.
  *	UT_OS		For failures allocating space, etc.
  *	UT_UNKNOWN	If the system_name does not exist.
- *	UT_SUCCESS	If successfully added.
+ *	UT_SUCCESS	If successfully removed or was not a member
+ *			in the first place..
  */
 ut_status
 ut_remove_unit_from_named_system(
@@ -1296,11 +1298,20 @@ ut_remove_unit_from_named_system(
     }
     else {
 	const UnitAndNamedSystemRegistry* entry = utFindNamedSystemRegistryForUnit(unit);
-	if(entry) {
+	if (entry) {
 	    utRemoveNamedSystemFromRegistry(ut_get_system(unit),
 		entry->registry, system_name);
 	    /* Note that if the registry entry is now empty (i.e., no bits set)
 	     * it could be removed from the tree and deleted. */
+	}
+	// We did not find a registry entry for the unit. This means
+	// the unit is not a member of any named unit system but that
+	// does not mean the system_name exists.
+	else {
+	    // This will set the sataus to UT_SUCCESS if it exists,
+	    // UT_UNKNOWN if it does not and UT_BAD_ARG if either argument
+	    // is NULL or empty string.
+	    utFindNamedSystemIndex(ut_get_system(unit), system_name);
 	}
     }
     return ut_get_status();
