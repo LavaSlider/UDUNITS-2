@@ -34,6 +34,12 @@ int snprintf(char * __restrict, size_t, const char * __restrict, ...) __printfli
 #endif /* __DARWIN_C_LEVEL < 200112L && !defined(_C99_SOURCE) && !defined(__cplusplus) */
 #include <stdlib.h>
 #include <string.h>
+// Add a declaration to suppress a compiler warning when
+// compiling on Mac OS X 10.8 / Mountain Lion because the
+// declaration is ifdef'd out in string.h
+#if __DARWIN_C_LEVEL < 200112L
+char *strdup(const char *);
+#endif /* __DARWIN_C_LEVEL < 200112L */
 #ifndef _MSC_VER
 #include <strings.h>
 #include <unistd.h>
@@ -50,6 +56,9 @@ int snprintf(char * __restrict, size_t, const char * __restrict, ...) __printfli
 #ifndef _XOPEN_PATH_MAX
 #   define _XOPEN_PATH_MAX 1024
 #endif
+
+#define	ALLOW_NAMED_UNIT_SYSTEMS
+//#undef	ALLOW_NAMED_UNIT_SYSTEMS
 
 #define NAME_SIZE 128
 #define ACCUMULATE_TEXT \
@@ -87,6 +96,9 @@ typedef struct {
     int         noPLural;
     int         nameSeen;
     int         symbolSeen;
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    char*	namedSystems;
+#endif
 } File;
 
 typedef struct {
@@ -886,6 +898,31 @@ mapUnitAndSymbol(
 }
 
 
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+static void
+mapUnitToNamedSystems(
+    ut_unit* const	unit)
+{
+    if (unit && currFile->namedSystems) {
+	char *systemName;
+	//printf( "Ending base unit definition and there are named systems defined\n" ); fflush(stdout);
+	ut_string_list* systems = ut_string_explode(currFile->namedSystems,",",NULL);
+	for (int i = 0; i < ut_string_list_length(systems); ++i) {
+		systemName = ut_string_list_element(systems, i);
+		ut_trim(systemName, currFile->textEncoding);
+		ut_add_unit_to_named_system(currFile->unit, systemName);
+		//printf( "- Adding unit to \"%s\"\n", systemName ); fflush(stdout);
+	}
+	ut_string_list_free(systems);
+    }
+    if (currFile->namedSystems) {
+	free(currFile->namedSystems);
+	currFile->namedSystems = NULL;
+    }
+}
+#endif
+
+
 /*
  * Initializes a "File" data-structure to the default state.
  */
@@ -908,6 +945,9 @@ fileInit(
     file->nameSeen = 0;
     file->symbolSeen = 0;
     file->path = NULL;
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    file->namedSystems = NULL;
+#endif
     (void)memset(file->singular, 0, sizeof(file->singular));
     (void)memset(file->plural, 0, sizeof(file->plural));
     (void)memset(file->symbol, 0, sizeof(file->symbol));
@@ -1123,6 +1163,30 @@ startUnit(
         currFile->symbol[0] = 0;
         currFile->nameSeen = 0;
         currFile->symbolSeen = 0;
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+	free(currFile->namedSystems);
+	if (atts && *atts) {
+	    //printf( "There are attributes specified for the unit definition\n" ); fflush(stdout);
+	    int i = 0;
+	    while (atts[i]) {
+		//printf( "- At %d is \"%s\"=\"%s\"\n", i, atts[i], atts[i+1] ); fflush(stdout);
+		if (strcasecmp("system",  atts[i]) == 0 ||
+		    strcasecmp("systems", atts[i]) == 0) {
+		    //printf( "- It is a system(s) attribute\n" ); fflush(stdout);
+		    if (atts[i+1]) {
+			currFile->namedSystems = strdup(atts[i+1]);
+			//printf( "- The systems list is \"%s\"\n", atts[i+1] ); fflush(stdout);
+		    }
+		    else {
+			//printf( "- The systems list is NULL\n" ); fflush(stdout);
+		    }
+		    break;
+		}
+		if( atts[++i] )
+		    ++i;
+	    }
+	}
+#endif
     }
 
     currFile->context = UNIT;
@@ -1150,6 +1214,9 @@ endUnit(
     }
 
     ut_free(currFile->unit);
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    free(currFile->namedSystems);
+#endif
     currFile->unit = NULL;
     currFile->context = UNIT_SYSTEM;
 }
@@ -1197,6 +1264,9 @@ endBase(
     void*		data)
 {
     currFile->unit = ut_new_base_unit(unitSystem);
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    mapUnitToNamedSystems(currFile->unit);
+#endif
 
     if (currFile->unit == NULL) {
         ut_set_status(UT_PARSE);
@@ -1252,6 +1322,9 @@ endDimensionless(
     void*		data)
 {
     currFile->unit = ut_new_dimensionless_unit(unitSystem);
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    mapUnitToNamedSystems(currFile->unit);
+#endif
 
     if (currFile->unit == NULL) {
         ut_set_status(UT_PARSE);
@@ -1315,6 +1388,9 @@ endDef(
     }
     else {
 	currFile->unit = ut_parse(unitSystem, text, currFile->textEncoding);
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+	mapUnitToNamedSystems(currFile->unit);
+#endif
 
 	if (currFile->unit == NULL) {
             ut_set_status(UT_PARSE);
@@ -2040,6 +2116,12 @@ readXmlWithParser(
                 path, XML_GetCurrentLineNumber(file.parser),
                 XML_GetCurrentColumnNumber(file.parser));
         }
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+	// Make sure named systems string was freed here to avoid memory leak
+	// This is likely unnecessary but won't hurt and file will be going
+	// off the stack soon. Should this also be done with currFile->unit?
+	free(currFile->namedSystems);
+#endif
 
         currFile = prevFile;
 

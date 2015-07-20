@@ -26,40 +26,10 @@
 #include "udunits2.h"
 #include "named_system.h"
 #include "ut_lists.h"
+#include "bitmap.h"
 
 static const char*  xmlPath;
 static ut_system*	unitSystem;
-static ut_unit*		kilogram;
-static ut_unit*		meter;
-static ut_unit*		radian;
-static ut_unit*		kelvin;
-static ut_unit*		second;
-static ut_unit*		minute;
-static ut_unit*		kilometer;
-static ut_unit*		micron;
-static ut_unit*		rankine;
-static ut_unit*		celsius;
-static ut_unit*		fahrenheit;
-static ut_unit*		meterPerSecondSquared;
-static ut_unit*		meterSquaredPerSecondSquared;
-static ut_unit*		joulePerKilogram;
-static ut_unit*		watt;
-static ut_unit*		wattSquared;
-static ut_unit*		cubicMeter;
-static ut_unit*		cubicMicron;
-static ut_unit*		BZ;
-static ut_unit*		dBZ;
-static ut_unit*		secondsSinceTheEpoch;
-static ut_unit*		minutesSinceTheMillenium;
-static ut_unit*		hertz;
-static ut_unit*		megahertz;
-
-static unsigned		asciiName = UT_ASCII | UT_NAMES;
-static unsigned		asciiNameDef = UT_ASCII | UT_NAMES | UT_DEFINITION;
-static unsigned		asciiSymbolDef = UT_ASCII | UT_DEFINITION;
-static unsigned		latin1SymbolDef = UT_LATIN1 | UT_DEFINITION;
-static unsigned		utf8SymbolDef = UT_UTF8 | UT_DEFINITION;
-
 
 /*
  * Only called once.
@@ -86,12 +56,6 @@ teardown(
     return 0;
 }
 
-
-ut_string_list*
-ut_string_explode(
-    const char* const	_string,
-    const char* const	_separator,
-    const char* const	_finalSeparator);
 
 static void
 test_string_list(void)
@@ -467,17 +431,6 @@ test_named_system_name_getting(void)
     ut_free_system(system);
 }
 
-typedef struct Bitmap   Bitmap;
-Bitmap *bitmapNew();
-Bitmap *bitmapDup( const Bitmap* src );
-void bitmapReset( Bitmap* entry );
-void bitmapFree( Bitmap* entry );
-Bitmap *bitmapCopy( Bitmap* dest, Bitmap* src );
-int bitmapCmp( const Bitmap* b1, const Bitmap* b2 );
-int bitIsSet( Bitmap* bitmap, int i );
-int setBit( Bitmap *bitmap, int i );
-int clearBit( Bitmap *bitmap, int i );
-int snprintfBitmap( char *buf, size_t size, const char *fmt, Bitmap *bitmap);
 
 static void
 test_bitmap(void)
@@ -1010,7 +963,7 @@ test_named_system_public_interface(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
     CU_ASSERT_FALSE(ut_is_in_named_system(NULL,""));
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-    CU_ASSERT_FALSE(ut_is_in_named_system(NULL,systemName1));
+    CU_ASSERT_FALSE(ut_is_in_named_system(NULL,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
     CU_ASSERT_FALSE(ut_is_in_named_system(unit1,NULL));
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
@@ -1021,56 +974,56 @@ test_named_system_public_interface(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
 
     CU_ASSERT_EQUAL(ut_add_unit_to_named_system(NULL,NULL), UT_BAD_ARG);
-    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(NULL,systemName1), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(NULL,"SI"), UT_BAD_ARG);
     CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,NULL), UT_BAD_ARG);
     CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,""), UT_BAD_ARG);
 
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,systemName1));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName1 has not been added
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName1 has not been added
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit3,systemName1));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName1 has not been added
-    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,systemName1), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName1));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,"SI"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN); // UT_UNKNOWN since "SI" has not been added
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"SI"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN); // UT_UNKNOWN since "SI" has not been added
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit3,"SI"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN); // UT_UNKNOWN since "SI" has not been added
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"SI"), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// Should this be UNKNOWN or SUCCESS?
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName1));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,systemName1), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName1));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// Should this be UNKNOWN or SUCCESS?
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName1));
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"SI"), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"SI"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"SI"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
 
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,systemName2));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName2 has not been added
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName2));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName2 has not been added
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit3,systemName2));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since systemName2 has not been added
-    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,systemName2), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName2));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit1,"US"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since "US" has not been added
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"US"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since "US" has not been added
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit3,"US"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since "US" has not been added
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"US"), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName2));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// Should this be UNKNOWN or SUCCESS?
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName2));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit2,systemName2), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName1));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit2,"US"), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName1));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName2));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit2,systemName2));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName2));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit2,"US"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
 
     ut_string_list* namedSystems;
@@ -1083,35 +1036,150 @@ test_named_system_public_interface(void)
     namedSystems = ut_get_named_systems_for_unit( unit1 );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), systemName1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), systemName2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "SI");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US");
     ut_string_list_free( namedSystems );
     namedSystems = ut_get_named_systems_for_unit( unit2 );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), systemName2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
     ut_string_list_free( namedSystems );
 
     CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(NULL,NULL), UT_BAD_ARG);
     CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(NULL,"NoSuchSystem"), UT_BAD_ARG);
-    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(NULL,systemName2), UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(NULL,"US"), UT_BAD_ARG);
     CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit2,NULL), UT_BAD_ARG);
     CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit2,"NoSuchSystem"), UT_UNKNOWN);
-    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit4,systemName2), UT_UNKNOWN);
-    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit2,systemName2), UT_SUCCESS);
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName1));
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName1));
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName1));
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit4,systemName1));
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,systemName2));
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,systemName2));
-    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,systemName2));
-    CU_ASSERT_FALSE(ut_is_in_named_system(unit4,systemName2));
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit4,"US"), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit2,"US"), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(unit2,"US"), UT_SUCCESS);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"SI"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"SI"));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,"SI"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit4,"SI"));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"US"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"US"));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit3,"US"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit4,"US"));
 
     ut_free(unit1);
     ut_free(unit2);
     ut_free(unit3);
     ut_free(unit4);
+    ut_free_system(system);
+}
+
+static void
+test_named_system_xml(void)
+{
+    ut_system*	system	= NULL;
+    ut_string_list* namedSystems = NULL;
+    ut_unit* unit;
+
+    system = ut_read_xml("./xmlSuccesses/named_systems.xml");
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_PARSE);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(system);
+
+    namedSystems = ut_get_named_systems( system );
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),4);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
+    ut_string_list_free(namedSystems);
+
+    namedSystems = ut_get_named_system_aliases(system, NULL);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),4);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
+    ut_string_list_free(namedSystems);
+
+    namedSystems = ut_get_named_system_aliases(system, "");
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),4);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
+    ut_string_list_free(namedSystems);
+
+    namedSystems = ut_get_named_system_aliases(system, "us");
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),1);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
+    ut_string_list_free(namedSystems);
+
+    unit = ut_get_unit_by_name(system,"kilogram");
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(unit);
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit,"si"));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit,"si-BaSe"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"us"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"avoirdupois"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"noSuchSystem"));
+    namedSystems = ut_get_named_systems_for_unit(unit);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "SI");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI-base");
+    ut_string_list_free(namedSystems);
+    ut_free(unit);
+
+    // systems="avoirdupois, US "
+    // >pound<
+    // >avoirdupois_pound<
+    unit = ut_get_unit_by_name(system,"avoirdupois_pound");
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(unit);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"si"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"si-BaSe"));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit,"us"));
+    CU_ASSERT_TRUE(ut_is_in_named_system(unit,"avoirdupois"));
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"noSuchSystem"));
+    namedSystems = ut_get_named_systems_for_unit(unit);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),2);
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
+    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US");
+    ut_string_list_free(namedSystems);
+    ut_free(unit);
+
+    unit = ut_get_unit_by_symbol(system,"ppb");
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(unit);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"si"));
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"si-BaSe"));
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"us"));
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"avoirdupois"));
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_FALSE(ut_is_in_named_system(unit,"noSuchSystem"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    namedSystems = ut_get_named_systems_for_unit(unit);
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),0);
+    ut_string_list_free(namedSystems);
+    ut_free(unit);
+
     ut_free_system(system);
 }
 
@@ -1137,6 +1205,7 @@ main(
 	    CU_ADD_TEST(testSuite, test_named_system_registry);
 	    CU_ADD_TEST(testSuite, test_named_system_registry_location);
 	    CU_ADD_TEST(testSuite, test_named_system_public_interface);
+	    CU_ADD_TEST(testSuite, test_named_system_xml);
 	    /*
 	    */
 

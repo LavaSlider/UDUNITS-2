@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<unit-system>
+    <prefix>
+        <value>.01</value> <name>centi</name>	<symbol>c</symbol>
+    </prefix>
+    <!-- SI Units -->
+    <unit systems=" SI,SI-base">
+        <base/>
+        <name><singular>meter</singular></name>
+        <symbol>m</symbol>
+        <aliases> <name><singular>metre</singular></name> </aliases>
+        <definition>The meter is the length of the path travelled by light in vacuum during a time interval of 1/299 792 458 of a second.</definition>
+    </unit>
+    <unit systems="SI ,SI-base">
+        <base/>
+        <name><singular>kilogram</singular></name>
+        <symbol>kg</symbol>
+        <definition> The kilogram is the unit of mass; it is equal to the mass of the international prototype of the kilogram.</definition>
+    </unit>
+    <unit systems="SI, SI-base">
+        <base/>
+        <name><singular>second</singular></name>
+        <symbol>s</symbol>
+        <definition>The second is the duration of 9 192 631 770 periods of the radiation corresponding to the transition between the two hyperfine levels of the ground state of the cesium 133 atom.</definition>
+    </unit>
+    <unit systems="SI, SI-base ">
+        <base/>
+        <name><singular>ampere</singular></name>
+        <symbol>A</symbol>
+        <definition>The ampere is that constant current which, if maintained in two straight parallel conductors of infinite length, of negligible circular cross-section, and placed 1 meter apart in vacuum, would produce between these conductors a force equal to 2e-7 newton per meter of length.</definition>
+    </unit>
+    <unit systems=" SI , SI-base ">
+        <base/>
+        <name><singular>kelvin</singular></name>
+        <symbol>K</symbol>
+        <definition>The kelvin, unit of thermodynamic temperature, is the fraction 1/273.16 of the thermodynamic temperature of the triple point of water.</definition>
+    </unit>
+    <!-- US Units -->
+    <unit systems="avoirdupois, US">
+        <def>2.834952e-2 kg</def>
+        <aliases>
+            <name> <singular>avoirdupois_ounce</singular> </name>
+        </aliases>
+        <definition>unit of mass equal to 1/16 avoirdupois pound, commonly used in the United States (16 oz = 1 pound = 7000 grains)</definition>
+    </unit>
+    <unit systems="avoirdupois, US ">
+        <def>4.5359237e-1 kg</def>
+        <name> <singular>pound</singular> </name>
+        <symbol>lb</symbol>
+        <aliases>
+            <name> <singular>avoirdupois_pound</singular> </name>
+        </aliases>
+        <definition>unit of mass in avoirdupois system of weights (a system commonly used in United States)</definition>
+    </unit>
+    <unit systems="US">
+        <def>2.54 cm</def>
+        <name> <singular>inch</singular> </name>
+        <symbol>in</symbol>
+        <aliases>
+            <name> <singular>international_inch</singular> </name>
+        </aliases>
+        <definition>unit of length equal to 25.4 mm by definition, used in imperial and US customary systems</definition>
+    </unit>
+    <unit systems="US">
+        <def>12 international_inches</def>
+        <name>
+            <singular>foot</singular>
+            <plural>feet</plural>
+        </name>
+        <symbol>ft</symbol>
+        <aliases>
+            <name>
+                <singular>international_foot</singular>
+                <plural>international_feet</plural>
+            </name>
+        </aliases>
+        <definition>unit of length equal to 12 international inches, in the imperial and US customary systems; primarily used in the United States</definition>
+    </unit>
+    <unit systems="US">
+        <def>3 international_feet</def>
+        <name> <singular>yard</singular> </name>
+        <symbol>yd</symbol>
+        <aliases>
+            <name> <singular>international_yard</singular> </name>
+        </aliases>
+        <definition>unit of length equal to 3 international feet, in the imperial and US customary systems; primarily used in the United States</definition>
+    </unit>
+    <!-- No Unit system -->
+    <unit>
+        <comment>Constant</comment>
+        <def>1e-9</def>
+        <aliases>
+            <symbol>ppb</symbol>
+            <symbol>ppbv</symbol>
+        </aliases>
+        <definition>parts per billion</definition>
+    </unit>
+</unit-system>
