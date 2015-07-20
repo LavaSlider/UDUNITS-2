@@ -905,13 +905,11 @@ mapUnitToNamedSystems(
 {
     if (unit && currFile->namedSystems) {
 	char *systemName;
-	//printf( "Ending base unit definition and there are named systems defined\n" ); fflush(stdout);
 	ut_string_list* systems = ut_string_explode(currFile->namedSystems,",",NULL);
 	for (int i = 0; i < ut_string_list_length(systems); ++i) {
 		systemName = ut_string_list_element(systems, i);
 		ut_trim(systemName, currFile->textEncoding);
 		ut_add_unit_to_named_system(currFile->unit, systemName);
-		//printf( "- Adding unit to \"%s\"\n", systemName ); fflush(stdout);
 	}
 	ut_string_list_free(systems);
     }
@@ -1166,19 +1164,14 @@ startUnit(
 #ifdef	ALLOW_NAMED_UNIT_SYSTEMS
 	free(currFile->namedSystems);
 	if (atts && *atts) {
-	    //printf( "There are attributes specified for the unit definition\n" ); fflush(stdout);
 	    int i = 0;
 	    while (atts[i]) {
-		//printf( "- At %d is \"%s\"=\"%s\"\n", i, atts[i], atts[i+1] ); fflush(stdout);
 		if (strcasecmp("system",  atts[i]) == 0 ||
 		    strcasecmp("systems", atts[i]) == 0) {
-		    //printf( "- It is a system(s) attribute\n" ); fflush(stdout);
 		    if (atts[i+1]) {
 			currFile->namedSystems = strdup(atts[i+1]);
-			//printf( "- The systems list is \"%s\"\n", atts[i+1] ); fflush(stdout);
-		    }
-		    else {
-			//printf( "- The systems list is NULL\n" ); fflush(stdout);
+		    //}
+		    //else {
 		    }
 		    break;
 		}
