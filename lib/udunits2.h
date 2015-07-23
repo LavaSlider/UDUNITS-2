@@ -1298,6 +1298,20 @@ ut_map_name_to_named_system(
     const char* const	named_system);	/* Existing name */
 
 /*
+ * Tests if the system_name is defined for the unit-system.
+ *
+ * Arguments:
+ *	system		Pointer to the unit-system to be checked
+ *	system_name	Pointer to the string to check.
+ *
+ * This function is NULL and empty string tolerant.
+ */
+int
+ut_named_system_exists_in_system(
+    const ut_system* const	system,
+    const char* const		system_name);
+
+/*
  * Get the list of the primary named unit systems for the system.
  * In other words, only unique named units systems will be returned.
  *

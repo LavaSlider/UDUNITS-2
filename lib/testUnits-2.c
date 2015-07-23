@@ -99,20 +99,34 @@ test_string_list(void)
     ut_string_list_add_element(list1, str1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 1);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,NULL)),str1);
-    free(tmp);
-    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,"=")),str1);
-    free(tmp);
-    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-",NULL)),str1);
-    free(tmp);
-    CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,"-","=")),str1);
-    free(tmp);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    tmp = ut_string_list_implode(list1,NULL,NULL);
+    if (tmp) {
+	CU_ASSERT_STRING_EQUAL(tmp,str1);
+	free(tmp);
+    }
+    tmp = ut_string_list_implode(list1,NULL,"=");
+    if (tmp) {
+	CU_ASSERT_STRING_EQUAL(tmp,str1);
+	free(tmp);
+    }
+    tmp = ut_string_list_implode(list1,"-",NULL);
+    if (tmp) {
+	CU_ASSERT_STRING_EQUAL(tmp,str1);
+	free(tmp);
+    }
+    tmp = ut_string_list_implode(list1,"-","=");
+    if (tmp) {
+	CU_ASSERT_STRING_EQUAL(tmp,str1);
+	free(tmp);
+    }
     ut_string_list_add_element(list1, NULL);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 2);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,-20));
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,2));
     CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,NULL)),str1);
@@ -126,10 +140,12 @@ test_string_list(void)
     ut_string_list_add_element(list1, str2);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 3);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,3));
     CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,NULL)),"helloworld");
     free(tmp);
@@ -142,20 +158,25 @@ test_string_list(void)
     ut_string_list_truncate_waste(list1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 3);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,3));
     ut_string_list_add_element(list1, str3);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,3), str3);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), str3);
+    if (ut_string_list_element(list1,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), str3);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,4));
     CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,NULL,NULL)),"helloworldgoodbye");
     free(tmp);
@@ -180,39 +201,48 @@ test_string_list(void)
     ut_string_list_add_element(list1, str1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 1);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     ut_string_list_add_element(list1, NULL);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 2);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,-20));
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,2));
     ut_string_list_add_element(list1, str2);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 3);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,3));
     ut_string_list_truncate_waste(list1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 3);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,3));
     ut_string_list_add_element(list1, str3);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,0), str1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), str1);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,1));
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,2), str2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), str2);
     CU_ASSERT_NOT_EQUAL(ut_string_list_element(list1,3), str3);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), str3);
+    if (ut_string_list_element(list1,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), str3);
     CU_ASSERT_PTR_NULL(ut_string_list_element(list1,4));
     ut_string_list_free(list1);
 
@@ -221,40 +251,57 @@ test_string_list(void)
     list1 = ut_string_explode( "zero,one,two,three",NULL,NULL );
     CU_ASSERT_PTR_NOT_NULL(list1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero,one,two,three");
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero,one,two,three");
     ut_string_list_free(list1);
     list1 = ut_string_explode( "zero,one,two,three",",",NULL );
     CU_ASSERT_PTR_NOT_NULL(list1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
+    if (ut_string_list_element(list1,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
+    if (ut_string_list_element(list1,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
     list1 = ut_string_explode( "zero,,two,three",",",NULL );
     CU_ASSERT_PTR_NOT_NULL(list1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
+    if (ut_string_list_element(list1,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "");
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
+    if (ut_string_list_element(list1,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
     ut_string_list_free(list1);
     list1 = ut_string_explode( "zero, one, two, three",", ",NULL );
     CU_ASSERT_PTR_NOT_NULL(list1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
+    if (ut_string_list_element(list1,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
+    if (ut_string_list_element(list1,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
     CU_ASSERT_STRING_EQUAL((tmp = ut_string_list_implode(list1,", "," and ")),"zero, one, two and three");
     ut_string_list_free(list1);
     list1 = ut_string_explode( tmp,", "," and " );
     free(tmp);
     CU_ASSERT_PTR_NOT_NULL(list1);
     CU_ASSERT_EQUAL(ut_string_list_length(list1), 4);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
+    if (ut_string_list_element(list1,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,0), "zero");
+    if (ut_string_list_element(list1,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,1), "one");
+    if (ut_string_list_element(list1,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,2), "two");
+    if (ut_string_list_element(list1,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(list1,3), "three");
     ut_string_list_free(list1);
 }
 
@@ -375,9 +422,12 @@ test_named_system_name_getting(void)
     namedSystems = ut_get_named_systems( system );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),3);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "Metric");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "Metric");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    if (ut_string_list_element(namedSystems,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US");
     ut_string_list_free( namedSystems );
 
     CU_ASSERT_EQUAL(ut_map_name_to_named_system(system, "International System", UT_ASCII, "SI"), UT_SUCCESS);
@@ -389,28 +439,42 @@ test_named_system_name_getting(void)
     namedSystems = ut_get_named_systems( system );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),3);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "Metric");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "Metric");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    if (ut_string_list_element(namedSystems,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US");
     ut_string_list_free( namedSystems );
     namedSystems = ut_get_named_system_aliases( system, "US" );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),4);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US Common");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US Common System");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US Conventional System");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US Common");
+    if (ut_string_list_element(namedSystems,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US Common System");
+    if (ut_string_list_element(namedSystems,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US Conventional System");
     ut_string_list_free( namedSystems );
     namedSystems = ut_get_named_system_aliases( system, NULL );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),7);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "International System");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "Metric");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,4), "US Common");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,5), "US Common System");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,6), "US Conventional System");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "International System");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "Metric");
+    if (ut_string_list_element(namedSystems,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI");
+    if (ut_string_list_element(namedSystems,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
+    if (ut_string_list_element(namedSystems,4))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,4), "US Common");
+    if (ut_string_list_element(namedSystems,5))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,5), "US Common System");
+    if (ut_string_list_element(namedSystems,6))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,6), "US Conventional System");
     ut_string_list_free( namedSystems );
 
     //printf( "Getting the list of named systems:\n" );
@@ -809,6 +873,15 @@ test_named_system_registry(void)
     registry = utSetNamedSystemInRegistry(system, registry, "");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+#ifndef AUTO_CREATE_NAMED_SYSTEMS
+    registry = utSetNamedSystemInRegistry(system, registry, "SI");
+    CU_ASSERT_PTR_NULL(registry);
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "SI"));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "SI", UT_ASCII), UT_SUCCESS);
+#endif
     registry = utSetNamedSystemInRegistry(system, registry, "SI");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -825,6 +898,13 @@ test_named_system_registry(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
 
     CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "US"));
+#ifndef AUTO_CREATE_NAMED_SYSTEMS
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    registry = utSetNamedSystemInRegistry(system, registry, "US");
+    CU_ASSERT_PTR_NOT_NULL(registry);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "US", UT_ASCII), UT_SUCCESS);
+#endif
     registry = utSetNamedSystemInRegistry(system, registry, "US");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -877,15 +957,27 @@ test_named_system_registry_location(void)
     utSetNamedSystemInRegistryLocation(NULL, &registry, "SI");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    utSetNamedSystemInRegistryLocation(system, NULL, "SI");
+    CU_ASSERT_PTR_NULL(registry);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
     utSetNamedSystemInRegistryLocation(system, &registry, NULL);
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
     utSetNamedSystemInRegistryLocation(system, &registry, "");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+#ifndef AUTO_CREATE_NAMED_SYSTEMS
+    utSetNamedSystemInRegistryLocation(system, &registry, "SI");
+    CU_ASSERT_PTR_NULL(registry);
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_FALSE(utNamedSystemIsInRegistryLocation(system, &registry, "SI"));
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "SI", UT_ASCII), UT_SUCCESS);
+#endif
     utSetNamedSystemInRegistryLocation(system, &registry, "SI");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_UNKNOWN);
     CU_ASSERT_TRUE(utNamedSystemIsInRegistryLocation(system, &registry, "SI"));
 
     utSetNamedSystemInRegistryLocation(NULL, &registry, "SI");
@@ -898,7 +990,14 @@ test_named_system_registry_location(void)
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
 
-    CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "US"));
+    CU_ASSERT_FALSE(utNamedSystemIsInRegistryLocation(system, &registry, "US"));
+#ifndef AUTO_CREATE_NAMED_SYSTEMS
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    utSetNamedSystemInRegistryLocation(system, &registry, "US");
+    CU_ASSERT_PTR_NOT_NULL(registry);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "US", UT_ASCII), UT_SUCCESS);
+#endif
     utSetNamedSystemInRegistryLocation(system, &registry, "US");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -944,8 +1043,7 @@ test_named_system_public_interface(void)
     ut_unit*	unit2	= NULL;
     ut_unit*	unit3	= NULL;
     ut_unit*	unit4	= NULL;
-    char	*systemName1 = "SI";
-    char	*systemName2 = "US";
+    int	len;
 
     system = ut_new_system();
     CU_ASSERT_PTR_NOT_NULL(system);
@@ -984,6 +1082,10 @@ test_named_system_public_interface(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN); // UT_UNKNOWN since "SI" has not been added
     CU_ASSERT_FALSE(ut_is_in_named_system(unit3,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN); // UT_UNKNOWN since "SI" has not been added
+#ifndef AUTO_CREATE_NAMED_SYSTEMS
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"SI"), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "SI", UT_ASCII), UT_SUCCESS);
+#endif
     CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"SI"), UT_SUCCESS);
     CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -1005,6 +1107,10 @@ test_named_system_public_interface(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since "US" has not been added
     CU_ASSERT_FALSE(ut_is_in_named_system(unit3,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since "US" has not been added
+#ifndef AUTO_CREATE_NAMED_SYSTEMS
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"US"), UT_UNKNOWN);
+    CU_ASSERT_EQUAL(ut_add_named_system(system, "US", UT_ASCII), UT_SUCCESS);
+#endif
     CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"US"), UT_SUCCESS);
     CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -1036,13 +1142,16 @@ test_named_system_public_interface(void)
     namedSystems = ut_get_named_systems_for_unit( unit1 );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "SI");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "SI");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US");
     ut_string_list_free( namedSystems );
     namedSystems = ut_get_named_systems_for_unit( unit2 );
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
     ut_string_list_free( namedSystems );
 
     CU_ASSERT_EQUAL(ut_remove_unit_from_named_system(NULL,NULL), UT_BAD_ARG);
@@ -1085,36 +1194,49 @@ test_named_system_xml(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),4);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    if (ut_string_list_element(namedSystems,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
+    if (ut_string_list_element(namedSystems,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
     ut_string_list_free(namedSystems);
 
     namedSystems = ut_get_named_system_aliases(system, NULL);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),4);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    if (ut_string_list_element(namedSystems,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
+    if (ut_string_list_element(namedSystems,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
     ut_string_list_free(namedSystems);
 
     namedSystems = ut_get_named_system_aliases(system, "");
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),4);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    if (ut_string_list_element(namedSystems,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "SI-base");
+    if (ut_string_list_element(namedSystems,3))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US");
     ut_string_list_free(namedSystems);
 
     namedSystems = ut_get_named_system_aliases(system, "us");
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),1);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "US");
     ut_string_list_free(namedSystems);
 
     unit = ut_get_unit_by_name(system,"kilogram");
@@ -1129,8 +1251,10 @@ test_named_system_xml(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "SI");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI-base");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "SI");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI-base");
     ut_string_list_free(namedSystems);
     ut_free(unit);
 
@@ -1149,8 +1273,10 @@ test_named_system_xml(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),2);
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
-    CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US");
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "avoirdupois");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "US");
     ut_string_list_free(namedSystems);
     ut_free(unit);
 

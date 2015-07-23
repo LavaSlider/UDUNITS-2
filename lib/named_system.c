@@ -712,6 +712,14 @@ utFindNamedSystemIndex(
     return entry != NULL ? entry->index : -1;
 }
 
+int
+ut_named_system_exists_in_system(
+    const ut_system* const	system,
+    const char* const		system_name)
+{
+    return (utFindNamedSystemIndex(system, system_name) >= 0);
+}
+
 
 
 /*
@@ -877,29 +885,32 @@ utSetNamedSystemInRegistry(
     const char* const		system_name)
 {
     ut_status	status;
+    int		idx;
     if (system == NULL ||
 	system_name == NULL || *system_name == '\0') {
 	status = UT_BAD_ARG;
-    } else {
-	if (bitmap == NULL) {
-	    bitmap = bitmapNew();
-	    if (bitmap == NULL) {
-		status = UT_OS;
-	    }
-	}
-	if (bitmap != NULL) {
-	    int	idx = utFindNamedSystemIndex(system, system_name);
-	    if (idx < 0) {
-		status = ut_add_named_system(system, system_name, UT_ASCII);
-	    }
+#ifndef AUTO_CREATE_NAMED_SYSTEMS
+    }
+    else if ((idx = utFindNamedSystemIndex(system, system_name)) < 0) {
+	status = UT_UNKNOWN;
+#endif
+    }
+    else if (bitmap == NULL && (bitmap = bitmapNew()) == NULL) {
+	    status = UT_OS;
+    }
+    else {
+#ifdef AUTO_CREATE_NAMED_SYSTEMS
+	if ((idx = utFindNamedSystemIndex(system, system_name)) < 0) {
+	    status = ut_add_named_system(system, system_name, UT_ASCII);
 	    idx = utFindNamedSystemIndex(system, system_name);
-	    if (idx < 0) {
-		status = ut_get_status();
-	    }
-	    else {
-		status = UT_SUCCESS;
-		setBit(bitmap, idx);
-	    }
+	}
+#endif
+	if (idx < 0) {
+	    status = ut_get_status();
+	}
+	else {
+	    status = UT_SUCCESS;
+	    setBit(bitmap, idx);
 	}
     }
     ut_set_status(status);
@@ -913,7 +924,7 @@ utSetNamedSystemInRegistry(
  * UT_OS	failure to allocate
  *
  * usage:
- *     status = utSetNamedSystemInRegistry(system, &registry, system_name);
+ *     status = utSetNamedSystemInRegistryLocation(system, &registry, system_name);
  *     if (status != UT_SUCCESS) {
  *	   fprintf(stderr, "Problem\n");
  */
@@ -1155,7 +1166,6 @@ findOrAddUnitsSearchEntry(
  *	NULL			on failure
  *
  *	UT_SUCCESS	Successfully added the new named system..
- *	UT_EXISTS	"name" already defined.
  *	UT_BAD_ARG	"system" is NULL, or "name" is NULL or empty.
  *	UT_OS		Operating-system failure.  See "errno".
  */
@@ -1221,7 +1231,8 @@ ut_is_in_named_system(
 	ut_system* system = ut_get_system(unit);
 	if (entry) {
 	    found = utNamedSystemIsInRegistry(system, entry->registry, system_name);
-	} else {
+	}
+	else {
 	    // If the no registry could be found for the unit then it clearly
 	    // is not in the named system but this is only success if the
 	    // system_name exists.

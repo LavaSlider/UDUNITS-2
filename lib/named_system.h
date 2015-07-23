@@ -14,6 +14,9 @@
 extern "C" {
 #endif
 
+#define AUTO_CREATE_NAMED_SYSTEMS
+#undef AUTO_CREATE_NAMED_SYSTEMS
+
 /*
  * Frees resources associated with a unit-system.
  *
@@ -106,7 +109,7 @@ void
 utNamedSystemRegistryFree(
     NamedSystemRegistry*	bitmap);
 
-/*=====================================================================================*/
+/*============================================================================*/
 /* These should probably go away... */
 ut_status
 utSetNamedSystemInRegistryLocation(

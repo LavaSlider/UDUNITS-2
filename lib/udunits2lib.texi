@@ -49,6 +49,7 @@ SI system of units.
 * Value Conversion::    Converting values between units
 * Prefixes::            Defining unit prefixes
 * Mapping::             Mapping between units and identifiers
+* Grouping::            Clustering units into useful categories
 * Operations::          Operations on units
 * Time::                Handling time
 * Errors::              Error-handling
@@ -91,6 +92,21 @@ Coding:
 @item ut_status     @tab @ref{ut_unmap_symbol_to_unit(),ut_unmap_symbol_to_unit}(ut_system* @var{system}, const char* @var{symbol}, const ut_encoding @var{encoding});
 @item ut_status     @tab @ref{ut_map_unit_to_symbol(),ut_map_unit_to_symbol}(const ut_unit* @var{unit}, const char* @var{symbol}, ut_encoding @var{encoding});
 @item ut_status     @tab @ref{ut_unmap_unit_to_symbol(),ut_unmap_unit_to_symbol}(const ut_unit* @var{unit}, ut_encoding @var{encoding});
+
+@item ut_status       @tab @ref{ut_add_named_system(),ut_add_named_system}(ut_system* const @var{system}, const char* const @var{name}, const ut_encoding @var{encoding})
+@item ut_status       @tab @ref{ut_map_name_to_named_system(),ut_map_name_to_named_system}(ut_system* const @var{system}, const char* const @var{new_name}, const ut_encoding @var{encoding}, const char* const @var{named_system})
+@item ut_string_list* @tab @ref{ut_get_named_systems(),ut_get_named_systems}(const ut_system* const @var{system})
+@item ut_string_list* @tab @ref{ut_get_named_system_aliases(),ut_get_named_system_aliases}(const ut_system* const @var{system}, const char* const @var{system_name})
+@item ut_status       @tab @ref{ut_add_unit_to_named_system(),ut_add_unit_to_named_system}(const ut_unit* const @var{unit}, const char* const @var{system_name})
+@item ut_status       @tab @ref{ut_remove_unit_from_named_system(),ut_remove_unit_from_named_system}(const ut_unit* const @var{unit}, const char* const @var{system_name})
+@item int             @tab @ref{ut_is_in_named_system(),ut_is_in_named_system}(const ut_unit* const @var{unit}, const char* const @var{system_name})
+@item ut_string_list* @tab @ref{ut_get_named_systems_for_unit(),ut_get_named_systems_for_unit}(const ut_unit* const @var{unit})
+@item int             @tab @ref{ut_string_list_length(),ut_string_list_length}(const ut_string_list* const @var{list})
+@item char*           @tab @ref{ut_string_list_element(),ut_string_list_element}(const ut_string_list* const @var{list}, int @var{element})
+@item void            @tab @ref{ut_string_list_free(),ut_string_list_free}(const ut_string_list* const @var{list})
+@item char*           @tab @ref{ut_string_list_implode(),ut_string_list_implode}(const ut_string_list* const @var{list}, const char* const @var{separator}, const char* const @var{finalSeparator})
+@item ut_string_list* @tab @ref{ut_string_explode(),ut_string_explode}(const char* const @var{string}, const char* const @var{separator}, const char* const @var{finalSeparator})
+
 @item int           @tab @ref{ut_is_dimensionless(),ut_is_dimensionless}(const ut_unit* @var{unit});
 @item int           @tab @ref{ut_same_system(),ut_same_system}(const ut_unit* @var{unit1}, const ut_unit* @var{unit2});
 @item int           @tab @ref{ut_compare(),ut_compare}(const ut_unit* @var{unit1}, const ut_unit* @var{unit2});
@@ -1382,7 +1398,7 @@ The units belong to different @ref{unit-system}s.
 @end table
 @end deftypefun
 
-@node Mapping, Time, Operations, Top
+@node Mapping, Grouping, Operations, Top
 @chapter Mapping Between Identifiers and Units
 @cindex mapping units
 @cindex mapping identifiers
@@ -1395,7 +1411,7 @@ unit-system via the identifier.
 Similarly, if a unit maps to an identifier, then the unit can be printed
 using the identifier.
 
-There a two kinds of identifiers: names and symbols.
+There are two kinds of identifiers: names and symbols.
 
 @menu
 * Names::       Mapping between units and names.
@@ -1547,7 +1563,299 @@ Success.
 @end table
 @end deftypefun
 
-@node Time, Errors, Mapping, Top
+@node Grouping, Time, Mapping, Top
+@chapter Clustering units into useful categories
+@cindex named unit systems
+@cindex unit groups/categories/named systems
+@cindex adding/removing units from groups
+@cindex using categories
+
+Within a unit-system, you can cluster units into convenient groups
+or categories.
+Typical examples of this are named unit systems such as the "metric
+system" or "SI unit system".
+However, unit groups are completely general and can be used for
+setting up favorites or restrictions for any purpose.
+It is possible to ask whether a unit is a member of a specific
+unit group once the unit group is set up and units are assigned to it.
+
+@menu
+* Creation::       Managing named unit systems.
+* Units::          Adding and removing units from groups.
+* String Lists::   Use and disposal of ut_string_lists.
+@end menu
+
+Library design/implementation consideration: The library is configurable
+at compile time whether @code{ut_add_unit_to_named_system()}
+function will silently create non-existent unit groups or
+fail with status @code{UT_UNKNOWN}.
+It is convenient to allow auto creation
+because it obviates the need for a call to @code{ut_add_named_system()}
+but makes it so a typographical error might be missed by silently
+creating new unintended named unit systems.
+The switch is in the file @code{lib/named_system.h}
+and is @code{AUTO_CREATE_NAMED_SYSTEMS}
+
+Similarly there is XML parser for loading unit systems can be
+configured to require named unit systems to be defined prior to
+use or automatically create them. For the time being, the only
+way to have it work is for allow automatic creation since the
+code is not written to pre-define them. This switch is in the
+file @code{lib/xml.c} and is
+@code{AUTO_CREATE_NAMED_SYSTEMS_IN_XML}.
+
+@node Creation, Units, , Grouping
+@section Creation
+@cindex named unit systems
+
+@anchor{ut_add_named_system()}
+@deftypefun @code{@ref{ut_status}} ut_add_named_system @code{(ut_system* const @var{system}, const char* const @var{name}, const ut_encoding @var{encoding})}
+Adds a unit group or unit system name to the unit-system referenced by @var{system}.
+Examples of unit system names are something like "SI" or "metric".
+If the unit group @var{name} already exists this function has no effect.
+Comparisons between units system names are case-insensitive.
+This function returns one of the following:
+
+@table @code
+@item UT_SUCCESS
+Success.
+@item UT_BAD_ARG
+@var{system} or @var{name} is @code{NULL} or @var{name} is an empty string.
+@item UT_OS
+Operating-system error.  See @code{errno} for the reason.
+@end table
+
+If you use @code{@ref{ut_read_xml()}}, then you should not normally need to
+call this function except to set up user or application specific groups.
+@end deftypefun
+
+@anchor{ut_map_name_to_named_system()}
+@deftypefun @code{@ref{ut_status}} ut_map_name_to_named_system @code{(ut_system* const @var{system}, const char* const @var{new_name}, const ut_encoding @var{encoding}, const char* const @var{named_system})}
+Adds an alias or alternate units system name to the existing unit group
+provided in @var{named_system} in the unit-system referenced by @var{system}.
+Examples are something like "International System" to "SI".
+The unit group name @var{new_name} cannot already exist or if it does
+it must already be an alias for the same @var{named_system}.
+Comparisons between unit system names are case-insensitive.
+This function returns one of the following:
+
+@table @code
+@item UT_SUCCESS
+Success.
+@item UT_BAD_ARG
+@var{system}, @var{new_name} or @var{named_system} is @code{NULL}, or @var{new_name} or @var{named_system} is an empty string.
+@item UT_UNKNOWN
+The unit group provided in @var{named_system} does not exist in the unit-system
+referenced by @var{system}.
+@item UT_EXISTS
+The alias provided in @var{new_name} already exists and is not a synonym of
+the unit group provided in @var{named_system}.
+@item UT_OS
+Operating-system error.  See @code{errno} for the reason.
+@end table
+
+If you use @code{@ref{ut_read_xml()}}, then you should not normally need to
+call this function except to set up user or application specific groups.
+@end deftypefun
+
+@anchor{ut_get_named_systems()}
+@deftypefun @code{ut_string_list*} ut_get_named_systems @code{(const ut_system* const @var{system})}
+Get the list of the primary named unit systems or unit groups for the
+unit-system referenced by @var{system}.
+In other words, only unique unit groups or named units systems will be returned
+and not any of their aliases.
+The returned string list is sorted alphabetically.
+This function returns one of the following:
+
+@table @code
+@item ut_string_list*
+The list of unique unit groups, which could be empty.
+You should pass every ut_string_list pointer to
+@code{@ref{ut_string_list_free()}} when you no longer need the
+corresponding string list.
+@item NULL
+The @var{system} argument was NULL.
+@end table
+@end deftypefun
+
+@anchor{ut_get_named_system_aliases()}
+@deftypefun @code{ut_string_list*} ut_get_named_system_aliases @code{(const ut_system* const @var{system}, const char* const @var{system_name})}
+Get the list of named unit systems for the system that are
+aliases for the unit group in @var{system_name} (including @var{system_name})
+for the unit-system referenced by @var{system}.
+If the @var{system_name} does not contain a unit group name but is an empty
+string @code{ut_get_named_system_aliases()} will return all the primary or
+unique unit system names for the unit-system (just like @code{@ref{ut_get_named_systems()}}).
+If the @var{system_name} argument is @code{NULL}
+@code{ut_get_named_system_aliases()} will return all the
+unit system names defined for the unit-system.
+The returned string list is sorted alphabetically.
+This function returns one of the following:
+
+@table @code
+@item ut_string_list*
+The list of unit group names per the @var{system_name} argument.
+You should pass every ut_string_list pointer to
+@code{@ref{ut_string_list_free()}} when you no longer need the
+corresponding string list.
+@item NULL
+The @var{system} or @var{system_name} argument was NULL or the @var{system_name} argument was an empty string.
+@end table
+@end deftypefun
+
+@node Units, String Lists, Creation, Grouping
+@section Units
+@cindex named unit systems and units
+
+@anchor{ut_add_unit_to_named_system()}
+@deftypefun @code{@ref{ut_status}} ut_add_unit_to_named_system @code{(const ut_unit* const @var{unit}, const char* const @var{system_name})}
+Specifies that the @var{unit} is a part of the unit group or named unit system
+specified in @var{system_name}.
+For example, specifying that centimeters is part of the metric system would
+look like:
+
+@example
+ ut_unit *cm = ut_get_unit_by_name( system, "centimeter" );
+ ud_add_unit_to_named_system( cm, "metric system" );
+@end example
+
+Note that if the unit group or named unit system does not exist, it is silently
+created.
+
+This function returns one of the following:
+
+@table @code
+@item UT_BAD_ARG
+The @var{unit} or @var{system_name} were @code{NULL} or the @var{system_name} was the empty string.
+@item UT_OS
+Failure allocating space.
+@item UT_SUCCESS
+The @var{unit} was successfully added to the unit group.
+@end table
+@end deftypefun
+
+@anchor{ut_remove_unit_from_named_system()}
+@deftypefun @code{@ref{ut_status}} ut_remove_unit_from_named_system @code{(const ut_unit* const @var{unit}, const char* const @var{system_name})}
+Specifies that the @var{unit} is not a part of the unit group or
+named unit system specified in @var{system_name}.
+For example, specifying that inches is not part of the metric system would
+look like:
+
+@example
+ ut_unit *inch = ut_get_unit_by_name( system, "inch" );
+ ut_remove_unit_from_named_system( inch, "metric system" );
+@end example
+
+Note that if the unit group or named unit system does not exist
+or the unit is not part of the unit group this function does nothing.
+This function returns one of the following:
+
+@table @code
+@item UT_BAD_ARG
+The @var{unit} or @var{system_name} were @code{NULL} or the @var{system_name} was the empty string.
+@item UT_OS
+Failure allocating space.
+@item UT_UNKNOWN
+The unit group named in @var{system_name} does not exist in the unit-system
+that the @var{unit} is a member of.
+@item UT_SUCCESS
+The @var{unit} was successfully removed from the unit group.
+@end table
+@end deftypefun
+
+@anchor{ut_is_in_named_system()}
+@deftypefun @code{int} ut_is_in_named_system @code{(const ut_unit* const @var{unit}, const char* const @var{system_name})}
+Tests whether the given @var{unit} is member of the unit group specified
+in @var{system_name}.
+For example:
+
+@example
+    if (!ut_is_in_named_system(userSpecifiedUnit,"SI")) @{
+        printf("Warning, your input was not in SI units.\n");
+    @}
+@end example
+
+This function returns one of the following:
+
+@table @code
+@item Non-zero
+The @var{unit} was found in the named unit system.
+@item Zero
+The @var{unit} was not found in the named unit system or there was a problem.
+@code{ut_get_status()} will return:
+
+@table @code
+@item UT_BAD_ARG
+@var{unit} or @var{system_name} was @code{NULL} or @var{system_name} was an emptry string.
+@item UT_UNKNOWN
+The unit group specified in @var{system_name} is not defined for the unit-system
+the @var{unit} belongs to.
+@item UT_SUCCESS
+The @var{unit} is not part of the unit group.
+@end table
+@end table
+@end deftypefun
+
+@anchor{ut_get_named_systems_for_unit()}
+@deftypefun @code{ut_string_list*} ut_get_named_systems_for_unit @code{(const ut_unit* const @var{unit})}
+Get the list of unit groups or named unit systems that the given @var{unit}
+is a member of. This gets just the primary names, that is one
+string per unit group or named unit system.
+@code{@ref{ut_get_named_system_aliases()}} can be used to find the
+alternate names for each of these.
+The returned string list is sorted alphabetically.
+This function returns one of the following:
+
+@table @code
+@item ut_string_list*
+The list of primary unit group names for the @var{unit} argument.
+You should pass every ut_string_list pointer to
+@code{@ref{ut_string_list_free()}} when you no longer need the
+corresponding string list.
+@item NULL
+The @var{unit} argument was NULL. @code{@ref{ut_get_status()}}
+will return @code{UT_BAD_ARG}.
+@end table
+@end deftypefun
+
+@node String Lists, , Units, Grouping
+@section String list utility functions
+@cindex string lists, using
+
+@anchor{ut_string_list_length()}
+@deftypefun @code{int} ut_string_list_length @code{(const ut_string_list* const @var{list})}
+Returns the number of elements in the list.
+@end deftypefun
+
+@anchor{ut_string_list_element()}
+@deftypefun @code{char*} ut_string_list_element @code{(const ut_string_list* const @var{list}, int @var{element})}
+Returns the specified string from the list (zero based).
+@end deftypefun
+
+@anchor{ut_string_list_free()}
+@deftypefun @code{void} ut_string_list_free @code{(const ut_string_list* const @var{list})}
+Free all the allocated memory for the string list referenced by @var{list}.
+Must be called on all @code{ut_string_lists} return by library functions.
+@end deftypefun
+
+@anchor{ut_string_list_implode()}
+@deftypefun @code{char*} ut_string_list_implode @code{(const ut_string_list* const @var{list}, const char* const @var{separator}, const char* const @var{finalSeparator})}
+Returns a @code{malloc()}'d string containing the concatonated contents
+of the @code{ut_string_list} referenced by @var{list} separated by the
+contents of @var{separator} except the final pair of entries are
+separated by the contents of @var{finalSeparator}.
+If the @var{finalSeparator} is @code{NULL} then the @var{separator} is
+used.
+@end deftypefun
+
+@anchor{ut_string_explode()}
+@deftypefun @code{ut_string_list*} ut_string_explode @code{(const char* const @var{string}, const char* const @var{separator}, const char* const @var{finalSeparator})}
+Inverse of @code{ut_string_list_implode()}.
+@end deftypefun
+
+
+
+@node Time, Errors, Grouping, Top
 @chapter The Handling of Time
 @cindex time, handling of
 
