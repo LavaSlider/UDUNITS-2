@@ -1563,6 +1563,7 @@ endName(
 	    XML_StopParser(currFile->parser, 0);
 	}
 	else if (currFile->nameSeen && currFile->singular[0] != 0) {
+	    ut_trim(text, currFile->textEncoding);
 	    if (ut_map_name_to_named_system(unitSystem, text,
 		currFile->textEncoding, currFile->singular) != UT_SUCCESS) {
 		ut_handle_error_message(
@@ -1572,6 +1573,7 @@ endName(
 	    }
 	}
 	else {
+	    ut_trim(text, currFile->textEncoding);
 	    ut_add_named_system(unitSystem, text, currFile->textEncoding);
 	    (void)strncpy(currFile->singular, text, NAME_SIZE);
 	    currFile->nameSeen = 1;
