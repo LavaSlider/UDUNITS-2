@@ -66,11 +66,7 @@ char *strdup(const char *);
 //  explicitely created before they are included in
 //  the attributes of a unit declaration it will
 //  create a parse error.
-#   define AUTO_CREATE_NAMED_SYSTEMS_IN_XML
-//  For now this is not possible since the this file
-//  has not been updated to handle the <named-unit-system>
-//  tag!!
-//#   undef AUTO_CREATE_NAMED_SYSTEMS_IN_XML
+static int __auto_create_named_systems_in_xml = 1;
 #endif
 
 #define NAME_SIZE 128
@@ -924,25 +920,28 @@ mapUnitToNamedSystems(
 	char *systemName;
 	ut_string_list* systems = ut_string_explode(currFile->namedSystems,",",NULL);
 	for (int i = 0; i < ut_string_list_length(systems); ++i) {
-		systemName = ut_string_list_element(systems, i);
-		ut_trim(systemName, currFile->textEncoding);
-#ifdef AUTO_CREATE_NAMED_SYSTEMS_IN_XML
-#    ifndef AUTO_CREATE_NAMED_SYSTEMS
+	    systemName = ut_string_list_element(systems, i);
+	    ut_trim(systemName, currFile->textEncoding);
+	    if (__auto_create_named_systems_in_xml) {
+#ifndef AUTO_CREATE_NAMED_SYSTEMS
 		if (!ut_named_system_exists_in_system(unitSystem, systemName)) {
 		    ut_add_named_system(unitSystem, systemName, currFile->textEncoding);
 		}
-#    endif
+#endif
 		ut_add_unit_to_named_system(currFile->unit, systemName);
-#else
+		}
+	    else {
 		if (!ut_named_system_exists_in_system(unitSystem, systemName)) {
 		    ut_set_status(UT_PARSE);
-		    ut_handle_error_message("Named unit system/group name not defined: \"%s\"", systemName);
+		    ut_handle_error_message(
+		        "Named unit system/group name not defined: \"%s\"",
+			systemName);
 		    XML_StopParser(currFile->parser, 0);
 		}
 		else {
 		    ut_add_unit_to_named_system(currFile->unit, systemName);
 		}
-#endif
+	    }
 	}
 	ut_string_list_free(systems);
     }
