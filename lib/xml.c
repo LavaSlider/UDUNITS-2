@@ -87,6 +87,10 @@ typedef enum {
     UNIT_NAME,
     ALIASES,
     ALIAS_NAME
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    ,NAMED_UNIT_SYSTEM,
+    NAMED_UNIT_SYSTEM_ALIASES
+#endif
 } ElementType;
 
 typedef struct {
@@ -1167,6 +1171,38 @@ endPrefix(
 }
 
 
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+/*
+ * Handles the start of a <named-unit-system> element.
+ */
+static void
+startNamedUnitSystem(
+    void*		data,
+    const char* const*	atts)
+{
+    if (currFile->context != UNIT_SYSTEM) {
+        ut_set_status(UT_PARSE);
+	ut_handle_error_message("Wrong place for <named-unit-system> element");
+    }
+
+    currFile->nameSeen = 0;
+    currFile->singular[0] = 0;
+    currFile->context = NAMED_UNIT_SYSTEM;
+}
+
+
+/*
+ * Handles the end of a <named-unit-system> element.
+ */
+static void
+endNamedUnitSystem(
+    void*		data)
+{
+    currFile->context = UNIT_SYSTEM;
+}
+#endif
+
+
 /*
  * Handles the start of a <unit> element.
  */
@@ -1443,6 +1479,30 @@ startName(
             ACCUMULATE_TEXT;
         }
     }
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    else if (currFile->context == NAMED_UNIT_SYSTEM) {
+        if (currFile->nameSeen) {
+            ut_set_status(UT_PARSE);
+            ut_handle_error_message("Named unit system <name> already set");
+            XML_StopParser(currFile->parser, 0);
+	}
+	else {
+	    clearText();
+	    ACCUMULATE_TEXT;
+	}
+    }
+    else if (currFile->context == NAMED_UNIT_SYSTEM_ALIASES) {
+        if (!currFile->nameSeen) {
+            ut_set_status(UT_PARSE);
+            ut_handle_error_message("Named unit system <name> not set");
+            XML_StopParser(currFile->parser, 0);
+	}
+	else {
+	    clearText();
+	    ACCUMULATE_TEXT;
+	}
+    }
+#endif
     else if (currFile->context == UNIT || currFile->context == ALIASES) {
         if (currFile->unit == NULL) {
             ut_set_status(UT_PARSE);
@@ -1493,6 +1553,32 @@ endName(
 	    }
 	}
     }
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    else if (currFile->context == NAMED_UNIT_SYSTEM ||
+	     currFile->context == NAMED_UNIT_SYSTEM_ALIASES) {
+	if (nbytes >= NAME_SIZE) {
+	    ut_set_status(UT_PARSE);
+	    ut_handle_error_message(
+	        "Named unit system name or alias \"%s\" is too long (max is %d)",
+		text, NAME_SIZE - 1);
+	    XML_StopParser(currFile->parser, 0);
+	}
+	else if (currFile->nameSeen && currFile->singular[0] != 0) {
+	    if (ut_map_name_to_named_system(unitSystem, text,
+		currFile->textEncoding, currFile->singular) != UT_SUCCESS) {
+		ut_handle_error_message(
+		    "Couldn't set alias \"%s\" for named unit system \"%s\"",
+		    text, currFile->singular);
+		XML_StopParser(currFile->parser, 0);
+	    }
+	}
+	else {
+	    ut_add_named_system(unitSystem, text, currFile->textEncoding);
+	    (void)strncpy(currFile->singular, text, NAME_SIZE);
+	    currFile->nameSeen = 1;
+	}
+    }
+#endif
     else if (currFile->context == UNIT_NAME) {
         if (currFile->singular[0] == 0) {
             ut_set_status(UT_PARSE);
@@ -1849,6 +1935,19 @@ startAliases(
     void*		data,
     const char**	atts)
 {
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    if (currFile->context == UNIT) {
+	currFile->context = ALIASES;
+    }
+    else if (currFile->context == NAMED_UNIT_SYSTEM) {
+	currFile->context = NAMED_UNIT_SYSTEM_ALIASES;
+    }
+    else {
+        ut_set_status(UT_PARSE);
+	ut_handle_error_message("Wrong place for <aliases> element");
+	XML_StopParser(currFile->parser, 0);
+    }
+#else
     if (currFile->context != UNIT) {
         ut_set_status(UT_PARSE);
 	ut_handle_error_message("Wrong place for <aliases> element");
@@ -1856,6 +1955,7 @@ startAliases(
     }
 
     currFile->context = ALIASES;
+#endif
 }
 
 
@@ -1866,7 +1966,16 @@ static void
 endAliases(
     void*		data)
 {
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+    if (currFile->context == NAMED_UNIT_SYSTEM_ALIASES) {
+	currFile->context = NAMED_UNIT_SYSTEM;
+    }
+    else { /* currFile->context == ALIASES */
+	currFile->context = UNIT;
+    }
+#else
     currFile->context = UNIT;
+#endif
 }
 
 
@@ -1939,6 +2048,11 @@ startElement(
 	else if (strcasecmp(name, "prefix") == 0) {
 	    startPrefix(data, atts);
 	}
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+	else if (strcasecmp(name, "named-unit-system") == 0) {
+	    startNamedUnitSystem(data, atts);
+	}
+#endif
 	else if (strcasecmp(name, "unit") == 0) {
 	    startUnit(data, atts);
 	}
@@ -1997,6 +2111,11 @@ endElement(
         else if (strcasecmp(name, "prefix") == 0) {
 	    endPrefix(data);
 	}
+#ifdef	ALLOW_NAMED_UNIT_SYSTEMS
+	else if (strcasecmp(name, "named-unit-system") == 0) {
+	    endNamedUnitSystem(data);
+	}
+#endif
 	else if (strcasecmp(name, "unit") == 0) {
 	    endUnit(data);
 	}
