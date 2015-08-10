@@ -459,6 +459,7 @@ test_named_system_name_getting(void)
 	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,3), "US Conventional System");
     ut_string_list_free( namedSystems );
     namedSystems = ut_get_named_system_aliases( system, NULL );
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
     CU_ASSERT_PTR_NOT_NULL(namedSystems);
     CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),7);
     if (ut_string_list_element(namedSystems,0))
@@ -475,6 +476,25 @@ test_named_system_name_getting(void)
 	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,5), "US Common System");
     if (ut_string_list_element(namedSystems,6))
 	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,6), "US Conventional System");
+    ut_string_list_free( namedSystems );
+
+    namedSystems = ut_get_named_system_aliases( system, "" );
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),3);
+    if (ut_string_list_element(namedSystems,0))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,0), "Metric");
+    if (ut_string_list_element(namedSystems,1))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,1), "SI");
+    if (ut_string_list_element(namedSystems,2))
+	CU_ASSERT_STRING_EQUAL(ut_string_list_element(namedSystems,2), "US");
+    ut_string_list_free( namedSystems );
+
+    namedSystems = ut_get_named_system_aliases( system, "NoSuchName" );
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_PTR_NOT_NULL(namedSystems);
+    CU_ASSERT_EQUAL(ut_string_list_length(namedSystems),0);
     ut_string_list_free( namedSystems );
 
     //printf( "Getting the list of named systems:\n" );

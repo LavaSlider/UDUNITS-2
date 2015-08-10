@@ -1382,11 +1382,6 @@ __ut_get_named_system_aliases(
 		}
 		/* system_name given ==> get aliases for it */
 		else {
-		    // This will return unique/primary names if the
-		    // system_name is not found. The user will have
-		    // no indication that the list is not the correct
-		    // list unless he/she tests ut_get_status() for
-		    // UT_UNKNOWN.
 		    __aliasesOf = utFindNamedSystemIndex(system, system_name);
 		    __doUniq = 0;	// Not primary
 		    __doAll = 0;	// Not all
@@ -1396,7 +1391,8 @@ __ut_get_named_system_aliases(
 		if (unit) {
 		    /* if a unit is specified and is assigned to systems */
 		    /* restrict what is stipulated above to these systems */
-		    const UnitAndNamedSystemRegistry* entry = utFindNamedSystemRegistryForUnit(unit);
+		    const UnitAndNamedSystemRegistry* entry =
+			    utFindNamedSystemRegistryForUnit(unit);
 		    if (entry) {
 			__registry = entry->registry;
 		    }
