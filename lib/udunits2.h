@@ -1445,6 +1445,35 @@ EXTERNL ut_string_list*
 ut_get_named_systems_for_unit(
     const ut_unit* const	unit);
 
+/*
+ * Get the unit from the named unit system that the provided
+ * unit can be converted to that is closest in magnitude to it.
+ * For example, converting kilometers to the US system should
+ * give miles not inches. Note that this compares the relative
+ * scales of the units and does not know about values.
+ *
+ * Arguments:
+ *	system_name	The desired or target named unit system
+ *	unit		The unit to get the compatible unit for
+ * Returns:
+ *	NULL		If unit or system_name argument was NULL
+ *			or if the system_name is an empty string
+ *			(ut_get_status() returns UT_BAD_ARG).
+ *			If the system_name passed does not exist
+ *			for the system that the unit belongs to
+ *			(ut_get_status() returns UT_UNKNOWN).
+ *			If there is no unit in the target named
+ *			unit system that the unit can be converted
+ *			to (ut_get_status() returns UT_SUCCESS).
+ *	ut_unit*	The compatible unit. This should be passed
+ *			to ut_free() when no longer needed.
+ *			ut_get_status() returns UT_SUCCESS.
+ */
+ut_unit*
+ut_unit_from_named_system_convertible_with_unit(
+    const char* const		system_name,
+    const ut_unit* const	unit);
+
 
 /******************************************************************************
  * Time Handling:

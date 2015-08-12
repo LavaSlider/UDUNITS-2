@@ -1329,6 +1329,208 @@ test_named_system_xml(void)
     ut_free_system(system);
 }
 
+static void
+test_ut_unit_from_named_system_convertible_with_unit(void)
+{
+    // Create a controlled unit system...
+    ut_system*	system	= NULL;
+    ut_unit*	kilometer	= NULL;
+    ut_unit*	meter		= NULL;
+    ut_unit*	centimeter	= NULL;
+    ut_unit*	millimeter	= NULL;
+    ut_unit*	mile		= NULL;
+    ut_unit*	yard		= NULL;
+    ut_unit*	foot		= NULL;
+    ut_unit*	inch		= NULL;
+    ut_unit*	liter		= NULL;
+    ut_unit*	milliliter	= NULL;
+    ut_unit*	gallon		= NULL;
+    ut_unit*	quart		= NULL;
+    ut_unit*	pint		= NULL;
+    ut_unit*	ounce		= NULL;
+    ut_unit*	teaspoon	= NULL;
+    ut_unit*	testUnit	= NULL;
+
+    CU_ASSERT_PTR_NULL(system);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit(NULL,meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("",meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("US",NULL));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    system = ut_new_system();
+    CU_ASSERT_PTR_NOT_NULL(system);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit(NULL,meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("",meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("US",NULL));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+
+    CU_ASSERT_EQUAL( ut_add_named_system(system,"SI",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_named_system(system,"US",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_named_system(system,"p1",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit(NULL,meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("",meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("US",NULL));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+
+    meter = ut_new_base_unit(system);
+    CU_ASSERT_PTR_NOT_NULL(meter);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit(NULL,meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("",meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("US",NULL));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_EQUAL( ut_map_name_to_unit("meter",UT_ASCII,meter), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_symbol_to_unit("m",UT_ASCII,meter), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_name(meter,"meter",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_symbol(meter,"m",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(meter,"SI"), UT_SUCCESS);
+    kilometer = ut_scale( 1000.0, meter );
+    CU_ASSERT_PTR_NOT_NULL(kilometer);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(kilometer,"SI"), UT_SUCCESS);
+    centimeter = ut_scale( 0.01, meter );
+    CU_ASSERT_PTR_NOT_NULL(centimeter);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(centimeter,"SI"), UT_SUCCESS);
+    millimeter = ut_scale( 0.001, meter );
+    CU_ASSERT_PTR_NOT_NULL(millimeter);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(millimeter,"SI"), UT_SUCCESS);
+    inch = ut_scale( 2.54, centimeter );
+    CU_ASSERT_PTR_NOT_NULL(inch);
+    CU_ASSERT_EQUAL( ut_map_name_to_unit("inch",UT_ASCII,inch), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_symbol_to_unit("in",UT_ASCII,inch), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_name(inch,"inch",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_symbol(inch,"in",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(inch,"US"), UT_SUCCESS);
+    foot = ut_scale( 12.0, inch );
+    CU_ASSERT_PTR_NOT_NULL(foot);
+    CU_ASSERT_EQUAL( ut_map_name_to_unit("foot",UT_ASCII,foot), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_symbol_to_unit("ft",UT_ASCII,foot), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_name(foot,"foot",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_symbol(foot,"ft",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(foot,"US"), UT_SUCCESS);
+    yard = ut_scale( 3.0, foot );
+    CU_ASSERT_PTR_NOT_NULL(yard);
+    CU_ASSERT_EQUAL( ut_map_name_to_unit("yard",UT_ASCII,yard), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_symbol_to_unit("yd",UT_ASCII,yard), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_name(yard,"yard",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_symbol(yard,"yd",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(yard,"US"), UT_SUCCESS);
+    mile = ut_scale( 5280, foot );
+    CU_ASSERT_PTR_NOT_NULL(mile);
+    CU_ASSERT_EQUAL( ut_map_name_to_unit("mile",UT_ASCII,mile), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_symbol_to_unit("mi",UT_ASCII,mile), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_name(mile,"mi",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_symbol(mile,"yd",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(mile,"US"), UT_SUCCESS);
+
+    liter = ut_new_base_unit(system);
+    CU_ASSERT_PTR_NOT_NULL(liter);
+    CU_ASSERT_EQUAL( ut_map_name_to_unit("liter",UT_ASCII,liter), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_symbol_to_unit("l",UT_ASCII,liter), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_name(liter,"liter",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_map_unit_to_symbol(liter,"l",UT_ASCII), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(liter,"SI"), UT_SUCCESS);
+
+    CU_ASSERT_PTR_NULL(ut_unit_from_named_system_convertible_with_unit("BadSystem",meter));
+    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+
+    testUnit = ut_unit_from_named_system_convertible_with_unit("US",meter);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(testUnit);
+    CU_ASSERT_EQUAL(ut_compare(testUnit,yard), 0);
+    ut_free(testUnit);
+
+    testUnit = ut_unit_from_named_system_convertible_with_unit("US",centimeter);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(testUnit);
+    CU_ASSERT_EQUAL(ut_compare(testUnit,inch), 0);
+    ut_free(testUnit);
+
+    testUnit = ut_unit_from_named_system_convertible_with_unit("US",kilometer);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(testUnit);
+    CU_ASSERT_EQUAL(ut_compare(testUnit,mile), 0);
+    ut_free(testUnit);
+
+    testUnit = ut_unit_from_named_system_convertible_with_unit("SI",kilometer);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(testUnit);
+    CU_ASSERT_EQUAL(ut_compare(testUnit,kilometer), 0);
+    ut_free(testUnit);
+
+    testUnit = ut_unit_from_named_system_convertible_with_unit("SI",mile);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(testUnit);
+    CU_ASSERT_EQUAL(ut_compare(testUnit,kilometer), 0);
+    ut_free(testUnit);
+
+    testUnit = ut_unit_from_named_system_convertible_with_unit("SI",liter);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(testUnit);
+    CU_ASSERT_EQUAL(ut_compare(testUnit,liter), 0);
+    ut_free(testUnit);
+
+    CU_ASSERT_PTR_NOT_NULL(liter);
+    testUnit = ut_unit_from_named_system_convertible_with_unit("US",liter);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_UNKNOWN);
+    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_BAD_ARG);
+    CU_ASSERT_PTR_NULL(testUnit);
+
+    // Should find the unit closest in magnitude to an inch in my
+    // private unit group (p1)...
+    //
+    // The code goes through every potential destination unit,
+    // gets a converter from the queried unit to the destination,
+    // converts 1.0 query units to destination units,
+    // returns the destination whose magnitude is closest to 1.0.
+    //
+    // So if the query unit is an inch and it is converted to
+    // miles it will be 0.000016 miles, if it is converted to
+    // centimeters it will be 2.54 centimeters.
+    // The magnitude is calculated by taking the abs(log10()) so
+    // .000016 is -4.79 and 2.54 is 0.404 and it will therefore
+    // pick centimeters (0.4 < 4.79).
+    //
+    // As an enhancement I could look at trying to maintain
+    // values with positive exponents (i.e., I would rather have
+    // 100 millimeters than .1 meters). For this I might need to
+    // know the value that is being converted... I would also need
+    // some sort of rule to decide if 1,000,000 is better than .1
+    // or not. To do this, maybe three additional parameters:
+    // value, max, and min?
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(      mile,"p1"), UT_SUCCESS);
+    CU_ASSERT_EQUAL( ut_add_unit_to_named_system(centimeter,"p1"), UT_SUCCESS);
+    testUnit = ut_unit_from_named_system_convertible_with_unit("p1",inch);
+    CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
+    CU_ASSERT_PTR_NOT_NULL(testUnit);
+    CU_ASSERT_NOT_EQUAL(ut_compare(testUnit,mile), 0);
+    CU_ASSERT_EQUAL(ut_compare(testUnit,centimeter), 0);
+    ut_free(testUnit);
+
+    ut_free( kilometer);
+    ut_free(     meter);
+    ut_free(centimeter);
+    ut_free(millimeter);
+    ut_free(      mile);
+    ut_free(      yard);
+    ut_free(      foot);
+    ut_free(      inch);
+    ut_free(     liter);
+    ut_free(milliliter);
+    ut_free(    gallon);
+    ut_free(     quart);
+    ut_free(      pint);
+    ut_free(     ounce);
+    ut_free(  teaspoon);
+    ut_free_system(system);
+}
+
 int
 main(
     const int		    argc,
@@ -1352,6 +1554,7 @@ main(
 	    CU_ADD_TEST(testSuite, test_named_system_registry_location);
 	    CU_ADD_TEST(testSuite, test_named_system_public_interface);
 	    CU_ADD_TEST(testSuite, test_named_system_xml);
+	    CU_ADD_TEST(testSuite, test_ut_unit_from_named_system_convertible_with_unit);
 	    /*
 	    */
 

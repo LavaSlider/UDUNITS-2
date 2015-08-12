@@ -18,8 +18,10 @@
 #   define _XOPEN_SOURCE 500
 #endif
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <math.h>	/* For fabs() and log10() */
 #ifdef _MSC_VER
 #include "tsearch.h"
 #else
@@ -1588,6 +1590,197 @@ static void twalkGetNameListAction(
 	ut_handle_error_message(
 	    "twalk unknown VISIT order: %d: named units system \"%s\" entry",
 	    order, nsse->name );
+	break;
+    }
+}
+
+
+/******************************************************************************
+ * User interface for getting units back from a named unit system
+ ******************************************************************************/
+static int		__targetSystemIdx = -1; // Target named system index
+static ut_unit*		__queryUnit = NULL;	// The starting unit
+static const ut_unit*	__foundUnit = NULL;	// The chosen (closest) unit
+static double		__foundValue = 0.0;	// The magnitude 1.0 converts to
+static void*		__unitList = NULL;	// Place to store matching units
+static void twalkGetConvertibleAction( const void* node, VISIT order, int lev);
+
+/*
+ * Get the unit from the named unit system that the provided
+ * unit can be converted to that is closest in magnitude to it.
+ * For example, converting kilometers to the US system should
+ * give miles not inches. Note that this compares the relative
+ * scales of the units and does not know about values.
+ *
+ * Arguments:
+ *	system_name	The desired or target named unit system
+ *	unit		The unit to get the compatible unit for
+ * Returns:
+ *	NULL		If unit or system_name argument was NULL
+ *			or if the system_name is an empty string
+ *			(ut_get_status() returns UT_BAD_ARG).
+ *			If the system_name passed does not exist
+ *			for the system that the unit belongs to
+ *			(ut_get_status() returns UT_UNKNOWN).
+ *			If there is no unit in the target named
+ *			unit system that the unit can be converted
+ *			to (ut_get_status() returns UT_SUCCESS).
+ *	ut_unit*	The compatible unit. This should be passed
+ *			to ut_free() when no longer needed.
+ *			ut_get_status() returns UT_SUCCESS.
+ */
+ut_unit*
+ut_unit_from_named_system_convertible_with_unit(
+    const char* const		system_name,
+    const ut_unit* const	unit)
+{
+    ut_unit*	foundUnit = NULL;	/* None found or error */
+
+    if (unit == NULL || system_name == NULL || *system_name == '\0') {
+	ut_set_status(UT_BAD_ARG);
+	ut_handle_error_message(
+	    "ut_unit_from_named_system_convertible_with_unit(): NULL argument");
+    }
+    else {
+	ut_system* system = ut_get_system(unit);
+	__targetSystemIdx = utFindNamedSystemIndex(system, system_name);
+	if (__targetSystemIdx < 0) {
+	    ut_set_status(UT_UNKNOWN);
+	}
+	else {
+	    UnitToRegistryMap** const unitToRegistryMap =
+		(UnitToRegistryMap**) smFind(systemToUnitToRegistry, system);
+	    if (!unitToRegistryMap || !*unitToRegistryMap) {
+		// Status to set here...???
+		// Maybe success since no convertible unit found?
+		ut_set_status(UT_SUCCESS);
+	    }
+	    else {
+		UnitToRegistryMap*	map = *unitToRegistryMap;
+		ut_set_status(UT_SUCCESS);
+		if (map && map->unitsWithNamedSystemRegistryCount > 0) {
+		    // This 'clone' can be eliminated when __queryUnit
+		    // can be changed to 'const ut_unit*' which will be
+		    // possible when ut_get_converter()'s 'from' parameter
+		    // is changed to 'const ut_unit*' from 'ut_unit* const'
+		    __queryUnit = ut_clone(unit);
+		    __foundUnit = NULL;
+		    twalk(map->tree, twalkGetConvertibleAction);
+		    foundUnit = __foundUnit ? ut_clone(__foundUnit) : NULL;
+		    ut_free(__queryUnit);
+		    __queryUnit = NULL;
+		    __foundUnit = NULL;
+		}
+		else {
+		    // Status to set here...???
+		    // Maybe success since no convertible unit found?
+		    ut_set_status(UT_SUCCESS);
+		}
+	    }
+	}
+    }
+    return foundUnit;
+}
+
+/*
+ * Target function for twalk(). Uses static variable __targetSystemIdx
+ * to select units that are members of the corresponding named unit system.
+ * If the static variable __queryUnit is set then it sub-selects those units
+ * that are convertible with that unit.
+ * If the static variable __unitList is set then the selected units are
+ * stored in that list. If not, then just the "closest" unit is stored in
+ * that static variable __foundUnit and the magnitude of 1.0 converted to
+ * it is stored in __foundValue.
+ *
+ * Can generate:
+ *   1. A list of all units that are in any named unit system (++)
+ *   2. A list of all units that are in a named unit system (++)
+ *   3. A list of all units that are in any named unit system and
+ *	convertible with a given unit (++)
+ *   4. A list of all units that are in a named unit system and
+ *	convertible with a given unit (++)
+ *   5. The unit that is the "closest match" from any named unit system
+ *	that is convertible with a given unit.
+ *   6. The unit that is the "closest match" from a named unit system
+ *	that is convertible with a given unit.
+ *
+ *   (++) These require completion of the ut_unit_list() functions that
+ *	  will be analogous to the ut_string_list() functions except to
+ *	  store units.
+ */
+static void twalkGetConvertibleAction(
+    const void*	node,
+    VISIT	order,
+    int		level)
+{
+    UnitAndNamedSystemRegistry** uansrp = (UnitAndNamedSystemRegistry**) node;
+    UnitAndNamedSystemRegistry*  uansr = *uansrp;
+    ut_unit*		tartgetUnit;
+    cv_converter*	cv;
+    double		valueOfOne;
+    double		magnitudeOfOne;
+
+    switch (order) {
+    case preorder:
+    case endorder:
+	break;
+    case postorder:
+    case leaf:
+	// If there is no target named unit system index set then return
+	// all the units that are part of any named unit system.
+	// Otherwise if a target named unit system is set then limit what
+	// is found to just the units that part of that unit group.
+	if (__targetSystemIdx < 0 ||
+	    bitIsSet(uansr->registry, __targetSystemIdx)) {
+	    // If there is no query unit set then get all the units
+	    // that are part of the named unit system corresponding to
+	    // __targetSystemIdx (or just all of them if not set).
+	    if (__queryUnit == NULL) {
+		if (__unitList) {
+		    assert("Need to fix/complete the code");
+		    //ut_unit_list_add_element(__unitList, uansr->unit);
+		}
+	    }
+
+	    // Otherwise if a query unit is set then limit what is
+	    // returned to just the units that are convertible with it
+	    else if (ut_are_convertible(__queryUnit,uansr->unit)) {
+		// If the unit list is initialized we want to
+		// collect all the units that the query unit could
+		// be converted to in the target named unit system
+		if (__unitList) {
+		    assert("Need to fix/complete the code");
+		    //ut_unit_list_add_element(__unitList, uansr->unit);
+		}
+
+		// If the unit list is not initialized then we just
+		// want the unit with closest scale/magnitude
+		else {
+		    // ut_get_converter()'s arguments should be
+		    //     (const ut_unit* from, const ut_unit* to)
+		    // not (ut_unit* const from, ut_unit* const to).
+		    // To suppress the compiler warnings I will
+		    // clone the unit before converting it.
+		    tartgetUnit = ut_clone(uansr->unit);
+		    cv = ut_get_converter(__queryUnit,tartgetUnit);
+		    // If the value is closer to 1.0 than previous
+		    // tested units (i.e., its log-value is closer
+		    // to zero) then keep it!
+		    valueOfOne = cv_convert_double(cv,1.0);
+		    magnitudeOfOne = fabs( log10( fabs(valueOfOne) ) );
+		    if (!__foundUnit || magnitudeOfOne < __foundValue) {
+			__foundUnit = uansr->unit;
+			__foundValue = magnitudeOfOne;
+		    }
+		    cv_free(cv);
+		    ut_free(tartgetUnit);
+		}
+	    }
+	}
+	break;
+    default:
+	ut_handle_error_message(
+	    "twalk unknown VISIT order: %d", order );
 	break;
     }
 }
