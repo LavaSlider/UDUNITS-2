@@ -101,6 +101,7 @@ Coding:
 @item ut_status       @tab @ref{ut_remove_unit_from_named_system(),ut_remove_unit_from_named_system}(const ut_unit* const @var{unit}, const char* const @var{system_name})
 @item int             @tab @ref{ut_is_in_named_system(),ut_is_in_named_system}(const ut_unit* const @var{unit}, const char* const @var{system_name})
 @item ut_string_list* @tab @ref{ut_get_named_systems_for_unit(),ut_get_named_systems_for_unit}(const ut_unit* const @var{unit})
+@item ut_unit* @tab @ref{ut_unit_from_named_system_convertible_with_unit(),ut_unit_from_named_system_convertible_with_unit}(const char* const @var{system_name}, const ut_unit* const @var{unit})
 @item int             @tab @ref{ut_string_list_length(),ut_string_list_length}(const ut_string_list* const @var{list})
 @item char*           @tab @ref{ut_string_list_element(),ut_string_list_element}(const ut_string_list* const @var{list}, int @var{element})
 @item void            @tab @ref{ut_string_list_free(),ut_string_list_free}(const ut_string_list* const @var{list})
@@ -1601,8 +1602,8 @@ configured to require named unit systems to be defined prior to
 use or automatically create them. For the time being, the only
 way to have it work is for allow automatic creation since the
 code is not written to pre-define them. This switch is in the
-file @code{lib/xml.c} and is
-@code{AUTO_CREATE_NAMED_SYSTEMS_IN_XML}.
+file @code{lib/xml.c} and is the static int
+@code{__auto_create_named_systems_in_xml}.
 
 @node Creation, Units, , Grouping
 @section Creation
@@ -1815,6 +1816,42 @@ corresponding string list.
 @item NULL
 The @var{unit} argument was NULL. @code{@ref{ut_get_status()}}
 will return @code{UT_BAD_ARG}.
+@end table
+@end deftypefun
+
+@anchor{ut_unit_from_named_system_convertible_with_unit()}
+@deftypefun @code{ut_unit*} ut_unit_from_named_system_convertible_with_unit @code{(const char* const @var{system_name}, const ut_unit* const @var{unit})}
+Get the unit from the named unit system that the provided
+unit can be converted to that is closest in magnitude to it.
+For example, converting kilometers to the US system should
+give miles not inches. Note that this compares the relative
+scales of the units and does not know about the value you
+will convert.
+
+The returned ut_unit needs to be passed to ut_free() when done.
+This function returns one of the following:
+
+@table @code
+@item ut_unit*
+The corresponding unit from the name unit system.
+You should pass every ut_string_list pointer to
+@code{@ref{ut_free()}} when you no longer need the unit.
+@item NULL
+The @var{unit} could not be converted to a unit in the named unit system
+or there was a problem.  @code{ut_get_status()} will return:
+
+@table @code
+@item UT_BAD_ARG
+The @var{unit} argument was NULL,
+the @var{system_name} argument was NULL or
+the @var{system_name} was a pointer to an empty string.
+@item UT_UNKNOWN
+The @var{system_name} argument contained a name that was not defined
+in the unit-system containing the @var{unit}.
+@item UT_SUCCESS
+There was no unit that @var{unit} could be converted to in the
+@var{system_name} provided.
+@end table
 @end table
 @end deftypefun
 
