@@ -97,6 +97,8 @@ typedef struct {
 static SystemMap*	systemToNameToIndex = NULL;
 static SystemMap*	systemToUnitToRegistry = NULL;
 
+static int		__auto_create_named_systems = 1;
+
 
 /******************************************************************************
  * Named System Search Entry:
@@ -846,20 +848,6 @@ ut_map_name_to_named_system(
  ******************************************************************************/
 
 /*
- * Connecting to the ut_unit:
- *   This can be done completely blindly by sticking a pointer
- *   to an opaque structure into the ut_unit structure. This
- *   provides more separation of function but requires more
- *   fidling with the ut_unit structure.
- *
- *   Alternatively, instead of sticking a pointer into the
- *   ut_unit I could put the actual structure. This would now
- *   require that the ut_unit knew about the internals of
- *   the structure (because the compiler cannot instantiate
- *   it without know what it is) but then all the allocate
- *   and freeing, etc., could be automatic!
- */
-/*
  * Adds the "system_name" from the system to the bitmap.
  *
  * Returns:
@@ -891,22 +879,20 @@ utSetNamedSystemInRegistry(
     if (system == NULL ||
 	system_name == NULL || *system_name == '\0') {
 	status = UT_BAD_ARG;
-#ifndef AUTO_CREATE_NAMED_SYSTEMS
     }
-    else if ((idx = utFindNamedSystemIndex(system, system_name)) < 0) {
+    else if (!__auto_create_named_systems &&
+	    (idx = utFindNamedSystemIndex(system, system_name)) < 0) {
 	status = UT_UNKNOWN;
-#endif
     }
     else if (bitmap == NULL && (bitmap = bitmapNew()) == NULL) {
 	    status = UT_OS;
     }
     else {
-#ifdef AUTO_CREATE_NAMED_SYSTEMS
-	if ((idx = utFindNamedSystemIndex(system, system_name)) < 0) {
+	if (__auto_create_named_systems &&
+	   (idx = utFindNamedSystemIndex(system, system_name)) < 0) {
 	    status = ut_add_named_system(system, system_name, UT_ASCII);
 	    idx = utFindNamedSystemIndex(system, system_name);
 	}
-#endif
 	if (idx < 0) {
 	    status = ut_get_status();
 	}
@@ -958,7 +944,7 @@ utSetNamedSystemInRegistryLocation(
  *			or empty. This is not returned if bitmap
  *			is NULL since that is equivalent to the
  *			bit not being set.
- *    UT_UNKOWN		The system_name is not defined in the
+ *    UT_UNKNOWN	The system_name is not defined in the
  *			system. Depending on the circumstances this
  *			might not be considered an error.
  *
@@ -1279,6 +1265,37 @@ ut_add_unit_to_named_system(
 	}
     }
     return ut_get_status();
+}
+
+
+/*
+ *  Returns whether ut_add_unit_to_named_system() will automatically
+ *  and silently create non-existent named unit systems or return
+ *  UT_UNKNOWN.
+ */
+int
+ut_add_unit_can_create_new_named_system()
+{
+    return __auto_create_named_systems;
+}
+
+/*
+ *  Changes the status of whether ut_add_unit_to_named_system() will
+ *  automatically and silently create non-existent named unit systems
+ *  or return UT_UNKNOWN. This function returns the previous state so
+ *	int oldState = ut_set_add_unit_can_create_new_named_system(1);
+ *	ut_set_add_unit_can_create_new_named_system(oldState);
+ *  will make sure ut_add_unit_to_named_system() will create new
+ *  named unit systems then return it to whatever its previous status
+ *  was.
+ */
+int
+ut_set_add_unit_can_create_new_named_system(
+    int yesOrNo )
+{
+    int	was = __auto_create_named_systems;
+    __auto_create_named_systems = yesOrNo;
+    return was;
 }
 
 /*

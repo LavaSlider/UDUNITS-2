@@ -923,13 +923,12 @@ mapUnitToNamedSystems(
 	    systemName = ut_string_list_element(systems, i);
 	    ut_trim(systemName, currFile->textEncoding);
 	    if (__auto_create_named_systems_in_xml) {
-#ifndef AUTO_CREATE_NAMED_SYSTEMS
-		if (!ut_named_system_exists_in_system(unitSystem, systemName)) {
+		if (!ut_add_unit_can_create_new_named_system() &&
+		    !ut_named_system_exists_in_system(unitSystem, systemName)) {
 		    ut_add_named_system(unitSystem, systemName, currFile->textEncoding);
 		}
-#endif
 		ut_add_unit_to_named_system(currFile->unit, systemName);
-		}
+	    }
 	    else {
 		if (!ut_named_system_exists_in_system(unitSystem, systemName)) {
 		    ut_set_status(UT_PARSE);

@@ -893,15 +893,15 @@ test_named_system_registry(void)
     registry = utSetNamedSystemInRegistry(system, registry, "");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-#ifndef AUTO_CREATE_NAMED_SYSTEMS
-    registry = utSetNamedSystemInRegistry(system, registry, "SI");
-    CU_ASSERT_PTR_NULL(registry);
-    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
-    CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "SI"));
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
-    CU_ASSERT_EQUAL(ut_add_named_system(system, "SI", UT_ASCII), UT_SUCCESS);
-#endif
+    if( !ut_add_unit_can_create_new_named_system() ) {
+	registry = utSetNamedSystemInRegistry(system, registry, "SI");
+	CU_ASSERT_PTR_NULL(registry);
+	CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_SUCCESS);
+	CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+	CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "SI"));
+	CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+	CU_ASSERT_EQUAL(ut_add_named_system(system, "SI",UT_ASCII),UT_SUCCESS);
+    }
     registry = utSetNamedSystemInRegistry(system, registry, "SI");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -918,13 +918,13 @@ test_named_system_registry(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
 
     CU_ASSERT_FALSE(utNamedSystemIsInRegistry(system, registry, "US"));
-#ifndef AUTO_CREATE_NAMED_SYSTEMS
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
-    registry = utSetNamedSystemInRegistry(system, registry, "US");
-    CU_ASSERT_PTR_NOT_NULL(registry);
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
-    CU_ASSERT_EQUAL(ut_add_named_system(system, "US", UT_ASCII), UT_SUCCESS);
-#endif
+    if( !ut_add_unit_can_create_new_named_system() ) {
+	CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+	registry = utSetNamedSystemInRegistry(system, registry, "US");
+	CU_ASSERT_PTR_NOT_NULL(registry);
+	CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+	CU_ASSERT_EQUAL(ut_add_named_system(system, "US",UT_ASCII),UT_SUCCESS);
+    }
     registry = utSetNamedSystemInRegistry(system, registry, "US");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -986,14 +986,14 @@ test_named_system_registry_location(void)
     utSetNamedSystemInRegistryLocation(system, &registry, "");
     CU_ASSERT_PTR_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
-#ifndef AUTO_CREATE_NAMED_SYSTEMS
-    utSetNamedSystemInRegistryLocation(system, &registry, "SI");
-    CU_ASSERT_PTR_NULL(registry);
-    CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_SUCCESS);
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
-    CU_ASSERT_FALSE(utNamedSystemIsInRegistryLocation(system, &registry, "SI"));
-    CU_ASSERT_EQUAL(ut_add_named_system(system, "SI", UT_ASCII), UT_SUCCESS);
-#endif
+    if( !ut_add_unit_can_create_new_named_system() ) {
+	utSetNamedSystemInRegistryLocation(system, &registry, "SI");
+	CU_ASSERT_PTR_NULL(registry);
+	CU_ASSERT_NOT_EQUAL(ut_get_status(), UT_SUCCESS);
+	CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+	CU_ASSERT_FALSE(utNamedSystemIsInRegistryLocation(system, &registry, "SI"));
+	CU_ASSERT_EQUAL(ut_add_named_system(system, "SI",UT_ASCII),UT_SUCCESS);
+    }
     utSetNamedSystemInRegistryLocation(system, &registry, "SI");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -1011,13 +1011,13 @@ test_named_system_registry_location(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_BAD_ARG);
 
     CU_ASSERT_FALSE(utNamedSystemIsInRegistryLocation(system, &registry, "US"));
-#ifndef AUTO_CREATE_NAMED_SYSTEMS
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
-    utSetNamedSystemInRegistryLocation(system, &registry, "US");
-    CU_ASSERT_PTR_NOT_NULL(registry);
-    CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
-    CU_ASSERT_EQUAL(ut_add_named_system(system, "US", UT_ASCII), UT_SUCCESS);
-#endif
+    if( !ut_add_unit_can_create_new_named_system() ) {
+	CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+	utSetNamedSystemInRegistryLocation(system, &registry, "US");
+	CU_ASSERT_PTR_NOT_NULL(registry);
+	CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);
+	CU_ASSERT_EQUAL(ut_add_named_system(system, "US",UT_ASCII),UT_SUCCESS);
+    }
     utSetNamedSystemInRegistryLocation(system, &registry, "US");
     CU_ASSERT_PTR_NOT_NULL(registry);
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -1064,6 +1064,23 @@ test_named_system_public_interface(void)
     ut_unit*	unit3	= NULL;
     ut_unit*	unit4	= NULL;
     int	len;
+    int	state;
+
+    state = ut_add_unit_can_create_new_named_system();
+    CU_ASSERT_EQUAL(ut_set_add_unit_can_create_new_named_system(1), state);
+    CU_ASSERT_EQUAL(    ut_add_unit_can_create_new_named_system(), 1);
+    CU_ASSERT_NOT_EQUAL(ut_add_unit_can_create_new_named_system(), 0);
+    CU_ASSERT_EQUAL(ut_set_add_unit_can_create_new_named_system(1), 1);
+    CU_ASSERT_EQUAL(    ut_add_unit_can_create_new_named_system(), 1);
+    CU_ASSERT_NOT_EQUAL(ut_add_unit_can_create_new_named_system(), 0);
+    CU_ASSERT_EQUAL(ut_set_add_unit_can_create_new_named_system(0), 1);
+    CU_ASSERT_EQUAL(    ut_add_unit_can_create_new_named_system(), 0);
+    CU_ASSERT_NOT_EQUAL(ut_add_unit_can_create_new_named_system(), 1);
+    CU_ASSERT_EQUAL(ut_set_add_unit_can_create_new_named_system(1), 0);
+    CU_ASSERT_EQUAL(    ut_add_unit_can_create_new_named_system(), 1);
+    CU_ASSERT_NOT_EQUAL(ut_add_unit_can_create_new_named_system(), 0);
+    CU_ASSERT_EQUAL(ut_set_add_unit_can_create_new_named_system(state), 1);
+    CU_ASSERT_EQUAL(    ut_add_unit_can_create_new_named_system(), state);
 
     system = ut_new_system();
     CU_ASSERT_PTR_NOT_NULL(system);
@@ -1102,10 +1119,10 @@ test_named_system_public_interface(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN); // UT_UNKNOWN since "SI" has not been added
     CU_ASSERT_FALSE(ut_is_in_named_system(unit3,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN); // UT_UNKNOWN since "SI" has not been added
-#ifndef AUTO_CREATE_NAMED_SYSTEMS
-    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"SI"), UT_UNKNOWN);
-    CU_ASSERT_EQUAL(ut_add_named_system(system, "SI", UT_ASCII), UT_SUCCESS);
-#endif
+    if( !ut_add_unit_can_create_new_named_system() ) {
+	CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"SI"), UT_UNKNOWN);
+	CU_ASSERT_EQUAL(ut_add_named_system(system, "SI",UT_ASCII),UT_SUCCESS);
+    }
     CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"SI"), UT_SUCCESS);
     CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"SI"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -1127,10 +1144,10 @@ test_named_system_public_interface(void)
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since "US" has not been added
     CU_ASSERT_FALSE(ut_is_in_named_system(unit3,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_UNKNOWN);	// This is UNKNOWN since "US" has not been added
-#ifndef AUTO_CREATE_NAMED_SYSTEMS
-    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"US"), UT_UNKNOWN);
-    CU_ASSERT_EQUAL(ut_add_named_system(system, "US", UT_ASCII), UT_SUCCESS);
-#endif
+    if( !ut_add_unit_can_create_new_named_system() ) {
+	CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"US"), UT_UNKNOWN);
+	CU_ASSERT_EQUAL(ut_add_named_system(system, "US",UT_ASCII),UT_SUCCESS);
+    }
     CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"US"), UT_SUCCESS);
     CU_ASSERT_TRUE(ut_is_in_named_system(unit1,"US"));
     CU_ASSERT_EQUAL(ut_get_status(), UT_SUCCESS);
@@ -1190,6 +1207,18 @@ test_named_system_public_interface(void)
     CU_ASSERT_FALSE(ut_is_in_named_system(unit2,"US"));
     CU_ASSERT_TRUE(ut_is_in_named_system(unit3,"US"));
     CU_ASSERT_FALSE(ut_is_in_named_system(unit4,"US"));
+
+    ut_set_add_unit_can_create_new_named_system( 0 );
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(NULL,"FunkyGroup"),UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,NULL),UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,""),UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"FunkyGroup"),UT_UNKNOWN);
+
+    ut_set_add_unit_can_create_new_named_system( 1 );
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(NULL,"FunkyGroup"),UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,NULL),UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,""),UT_BAD_ARG);
+    CU_ASSERT_EQUAL(ut_add_unit_to_named_system(unit1,"FunkyGroup"),UT_SUCCESS);
 
     ut_free(unit1);
     ut_free(unit2);

@@ -1586,24 +1586,15 @@ unit group once the unit group is set up and units are assigned to it.
 * String Lists::   Use and disposal of ut_string_lists.
 @end menu
 
-Library design/implementation consideration: The library is configurable
-at compile time whether @code{ut_add_unit_to_named_system()}
-function will silently create non-existent unit groups or
-fail with status @code{UT_UNKNOWN}.
-It is convenient to allow auto creation
-because it obviates the need for a call to @code{ut_add_named_system()}
-but makes it so a typographical error might be missed by silently
-creating new unintended named unit systems.
-The switch is in the file @code{lib/named_system.h}
-and is @code{AUTO_CREATE_NAMED_SYSTEMS}
-
-Similarly there is XML parser for loading unit systems can be
-configured to require named unit systems to be defined prior to
-use or automatically create them. For the time being, the only
-way to have it work is for allow automatic creation since the
-code is not written to pre-define them. This switch is in the
+Library design/implementation consideration: The
+XML parser for loading named unit systems can be
+configured to require named unit systems to be defined
+with a <named-unit-system> tag prior to
+use or automatically create them.  This switch is in the
 file @code{lib/xml.c} and is the static int
-@code{__auto_create_named_systems_in_xml}.
+@code{__auto_create_named_systems_in_xml}. An external
+interface needs to be added so this can be controlled
+at runtime instead of only at compile time.
 
 @node Creation, Units, , Grouping
 @section Creation
@@ -1720,18 +1711,70 @@ look like:
  ud_add_unit_to_named_system( cm, "metric system" );
 @end example
 
-Note that if the unit group or named unit system does not exist, it is silently
-created.
+Note that if the unit group or named unit system does not exist, it is
+either silently created or @code{ut_add_unit_to_named_system} will
+fail with status @code{UT_UNKNOWN} depending on the status of
+@code{@ref{ut_add_unit_can_create_new_named_system()}}.
 
 This function returns one of the following:
 
 @table @code
 @item UT_BAD_ARG
 The @var{unit} or @var{system_name} were @code{NULL} or the @var{system_name} was the empty string.
+@item UT_UNKNOWN
+The @var{system_name} was not a part of the unit-sytem that the @var{unit}
+belongs to and @code{@ref{ut_add_unit_can_create_new_named_system()}} is
+false.
 @item UT_OS
 Failure allocating space.
 @item UT_SUCCESS
 The @var{unit} was successfully added to the unit group.
+@end table
+@end deftypefun
+
+@anchor{ut_add_unit_can_create_new_named_system()}
+@deftypefun @code{int} ut_add_unit_can_create_new_named_system @code{()}
+Returns whether a call to @code{@ref{ut_add_unit_to_named_system()}}
+will automatically and silently create a non-existent named unit system.
+
+If this returns zero then @code{@ref{ut_add_named_system()}} must be
+called to create the named unit system before a unit can be added to it.
+This has the advantage of protecting from typographical errors when
+coding since mismatches between named unit systems will result in errors.
+However, it does slightly increase coding complexity since explicitely
+creating named unit systems is required. The functional state of
+@code{@ref{ut_add_unit_to_named_system()}}
+can be changed using @code{@ref{ut_set_add_unit_can_create_new_named_system()}}.
+
+This function returns:
+
+@table @code
+@item zero
+Named unit systems will not be automatically created by
+@code{@ref{ut_add_unit_to_named_system()}}.
+@item non-zero
+Named unit systems will be automatically created by
+@code{@ref{ut_add_unit_to_named_system()}}.
+@end table
+@end deftypefun
+
+@anchor{ut_set_add_unit_can_create_new_named_system()}
+@deftypefun @code{int} ut_set_add_unit_can_create_new_named_system @code{(int yesOrNo)}
+Allows changing whether
+@code{@ref{ut_add_unit_to_named_system()}}
+will automatical create a non-existent named unit systems or not.
+The current state can be checked by
+@code{@ref{ut_add_unit_can_create_new_named_system()}}.
+
+This function returns the previous state:
+
+@table @code
+@item zero
+Named unit systems would not have been automatically created by
+@code{@ref{ut_add_unit_to_named_system()}}.
+@item non-zero
+Named unit systems would have been automatically created by
+@code{@ref{ut_add_unit_to_named_system()}}.
 @end table
 @end deftypefun
 

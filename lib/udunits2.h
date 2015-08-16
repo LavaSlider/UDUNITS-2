@@ -1376,6 +1376,9 @@ ut_get_named_system_aliases(
  *  Returns:
  *	UT_BAD_ARG	If unit or system name are NULL or an emptry
  *			string is passed for the system_name.
+ *	UT_UNKNOWN	If ut_add_unit_can_create_new_named_system()
+ *			returns returns zero and the system_name
+ *			has not be created with ut_add_named_system().
  *	UT_OS		For failures allocating space, etc.
  *	UT_SUCCESS	If successfully added.
  */
@@ -1383,6 +1386,28 @@ EXTERNL ut_status
 ut_add_unit_to_named_system(
     const ut_unit* const	unit,
     const char* const		system_name);
+
+/*
+ *  Returns whether ut_add_unit_to_named_system() will automatically
+ *  and silently create non-existent named unit systems or return
+ *  UT_UNKNOWN.
+ */
+EXTERNL int
+ut_add_unit_can_create_new_named_system();
+
+/*
+ *  Changes the status of whether ut_add_unit_to_named_system() will
+ *  automatically and silently create non-existent named unit systems
+ *  or return UT_UNKOWN. This function returns the previous state so
+ *	int oldState = ut_set_add_unit_can_create_new_named_system(1);
+ *	ut_set_add_unit_can_create_new_named_system(oldState);
+ *  will make sure ut_add_unit_to_named_system() will create new
+ *  named unit systems then return it to whatever its previous status
+ *  was.
+ */
+EXTERNL int
+ut_set_add_unit_can_create_new_named_system(
+    int yesOrNo );
 
 /*
  *  Specifies that the unit passed is not part of the named unit system
@@ -1469,7 +1494,7 @@ ut_get_named_systems_for_unit(
  *			to ut_free() when no longer needed.
  *			ut_get_status() returns UT_SUCCESS.
  */
-ut_unit*
+EXTERNL ut_unit*
 ut_unit_from_named_system_convertible_with_unit(
     const char* const		system_name,
     const ut_unit* const	unit);
